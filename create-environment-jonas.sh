@@ -1,0 +1,58 @@
+set -e
+# Some users experienced issues on Ubuntu with an AMD CPU
+# Install libopenblas-dev (issue #115, thanks WindWing)
+apt install libopenblas-dev --yes
+
+export TORCH_CUDA_ARCH_LIST="6.0 6.1 6.2 7.0 7.2 7.5 8.0 8.6"
+
+# install cuda 11.3 toolkit
+wget https://developer.download.nvidia.com/compute/cuda/11.3.0/local_installers/cuda_11.3.0_465.19.01_linux.run
+apt --purge remove "*cuda*" "*cublas*" "*cufft*" "*cufile*" "*curand*" "*cusolver*" "*cusparse*" "*gds-tools*" "*npp*" "*nvjpeg*" --yes --allow-change-held-packages
+apt autoremove -y
+sudo apt update -y
+sudo apt install g++-9 gcc-9 --yes
+sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 9
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 9
+sudo update-alternatives --config gcc
+
+
+conda create -n mask3d_cuda113 python=3.10 pip=23.3 -y
+eval "$(conda shell.bash hook)"
+conda activate mask3d_cuda113
+
+conda install -c conda-forge pyyaml==5.4.1 -y
+conda install -c conda-forge pycocotools==2.0.4 -y
+python -m pip install omegaconf==2.0.6
+sh cuda_11.3.0_465.19.01_linux.run --toolkit --silent --override
+
+conda env update -f environment.yml -y
+
+python -m pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 --extra-index-url https://download.pytorch.org/whl/cu113
+python -m pip install torch-scatter -f https://data.pyg.org/whl/torch-1.12.1+cu113.html
+python -m pip install 'git+https://github.com/facebookresearch/detectron2.git@710e7795d0eeadf9def0e7ef957eea13532e34cf' --no-deps
+
+mkdir -p third_party
+cd third_party
+
+git clone --recursive "https://github.com/NVIDIA/MinkowskiEngine"
+cd MinkowskiEngine
+rm requirements.txt
+echo "numpy" > requirements.txt
+git checkout 02fc608bea4c0549b0a7b00ca1bf15dee4a0b228
+python setup.py install --force_cuda --blas=openblas
+
+cd ..
+git clone https://github.com/ScanNet/ScanNet.git
+cd ScanNet/Segmentator
+git checkout 3e5726500896748521a6ceb81271b0f5b2c0e7d2
+make
+
+cd third_party/pointnet2
+python setup.py install
+
+cd ../../
+python -m pip install pytorch-lightning==1.7.2 --no-deps
+python -m pip install torchmetrics==1.5.2 --no-deps
+pip install -r lightning-1.7.2-requirements.txt
+
+echo "Make sure to add /usr/local/cuda-11.3/targets/x86_64-linux/lib to \$LD_LIBRARY_PATH"
