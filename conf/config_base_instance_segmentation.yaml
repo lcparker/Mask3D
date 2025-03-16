@@ -16,7 +16,7 @@ general:
   use_dbscan: false
   ignore_class_threshold: 100
   project_name: mask3d
-  workspace: lcpwandb
+  workspace: mask3d
   experiment_name: DEBUG_ABLATION
   num_targets: 19
   add_instance: true
