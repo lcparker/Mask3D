@@ -1,13 +1,13 @@
 set -e
-# Some users experienced issues on Ubuntu with an AMD CPU
-# Install libopenblas-dev (issue #115, thanks WindWing)
 apt install libopenblas-dev --yes
 
 export TORCH_CUDA_ARCH_LIST="6.0 6.1 6.2 7.0 7.2 7.5 8.0 8.6"
 
 # install cuda 11.3 toolkit
-wget https://developer.download.nvidia.com/compute/cuda/11.3.0/local_installers/cuda_11.3.0_465.19.01_linux.run
-apt --purge remove "*cuda*" "*cublas*" "*cufft*" "*cufile*" "*curand*" "*cusolver*" "*cusparse*" "*gds-tools*" "*npp*" "*nvjpeg*" --yes --allow-change-held-packages
+if [ ! -f "cuda_11.3.0_465.19.01_linux.run" ]; then
+    wget https://developer.download.nvidia.com/compute/cuda/11.3.0/local_installers/cuda_12.3.0_465.19.01_linux.run
+fi
+apt --purge remove "*cuda*" "*cublas*" "*cufft*" "*cufile*" "*curand*" "*cusolver*" "*cusparse*" "*gds-tools*" "*npp*" "*nvjpeg*" --yes --allow-change-held-packages || echo "No CUDA packages found or removal failed"
 apt autoremove -y
 sudo apt update -y
 sudo apt install g++-9 gcc-9 --yes
@@ -25,10 +25,14 @@ conda install -c conda-forge pycocotools==2.0.4 -y
 python -m pip install omegaconf==2.0.6
 sh cuda_11.3.0_465.19.01_linux.run --toolkit --silent --override
 
-conda env update -f environment.yml -y
+conda env update -f environment.yml
 
 python -m pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 --extra-index-url https://download.pytorch.org/whl/cu113
-python -m pip install torch-scatter -f https://data.pyg.org/whl/torch-1.12.1+cu113.html
+if [ -z $TORCH_SCATTER_PATH ]; then
+    python -m pip install torch-scatter -f https://data.pyg.org/whl/torch-1.12.1+cu113.html
+else
+    python -m pip install $TORCH_SCATTER_PATH
+fi
 python -m pip install 'git+https://github.com/facebookresearch/detectron2.git@710e7795d0eeadf9def0e7ef957eea13532e34cf' --no-deps
 
 mkdir -p third_party
