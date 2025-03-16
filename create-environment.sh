@@ -28,10 +28,10 @@ sh cuda_11.3.0_465.19.01_linux.run --toolkit --silent --override
 conda env update -f environment.yml
 
 python -m pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 --extra-index-url https://download.pytorch.org/whl/cu113
-if [ -z $TORCH_SCATTER_PATH ]; then
+if [ ! -f $TORCH_SCATTER_WHEEL ]; then
     python -m pip install torch-scatter -f https://data.pyg.org/whl/torch-1.12.1+cu113.html
 else
-    python -m pip install $TORCH_SCATTER_PATH
+    python -m pip install $TORCH_SCATTER_WHEEL
 fi
 python -m pip install 'git+https://github.com/facebookresearch/detectron2.git@710e7795d0eeadf9def0e7ef957eea13532e34cf' --no-deps
 
@@ -51,7 +51,7 @@ cd ScanNet/Segmentator
 git checkout 3e5726500896748521a6ceb81271b0f5b2c0e7d2
 make
 
-cd third_party/pointnet2
+cd ../../third_party/pointnet2
 python setup.py install
 
 cd ../../
