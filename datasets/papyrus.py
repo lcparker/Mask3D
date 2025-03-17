@@ -3,9 +3,10 @@ from typing import List, Tuple
 import torch
 
 import numpy as np
-import MinkowskiEngine as EM
+import MinkowskiEngine as ME
 from synthetic_pages.nrrd_file import Nrrd
 from volume_pointcloud_conversion import dense_volume_with_labels_to_points
+from scrolls_instance_segmentation.data.synthetic_datamodule_cubes import SyntheticInstanceCubesDataset
 
 
 class PapyrusVolume:
@@ -26,7 +27,7 @@ class PapyrusVolume:
         
         # Create target format Mask3D expects
         self.target = {
-            "labels": labels,  # Instance IDs
+            "labels": labels,  # Instance IDs # BUG: these are probably semantic class labels
             "masks": torch.zeros(self.num_instances, len(coords)),  # Binary masks for each instance
         }
         
@@ -59,3 +60,46 @@ class PapyrusDataset(torch.utils.data.Dataset):
             example.target,
             str(idx)  # Filename/identifier
         )
+        
+class SyntheticPapyrusDataset(torch.utils.data.Dataset):
+    def __init__(self, reference_volume_filename, reference_label_filename, 
+                 mode="train", spatial_transform=True, layer_dropout=False, 
+                 layer_shuffle=True):
+        super().__init__()
+        self.synthetic_gen = SyntheticInstanceCubesDataset(
+            reference_volume_filename=reference_volume_filename,
+            reference_label_filename=reference_label_filename,
+            spatial_transform=spatial_transform,
+            layer_dropout=layer_dropout,
+            layer_shuffle=layer_shuffle
+        )
+        
+    def __len__(self):
+        return 500  # Same as synthetic dataset
+        
+    def __getitem__(self, idx):
+        batch = self.synthetic_gen._gather_batch()
+        coords, features, point_labels = dense_volume_with_labels_to_points(
+            batch['vol'], batch['lbl'], min_density=0.1
+        )
+        
+        # Get instance IDs once, excluding background (0)
+        instance_ids = torch.unique(point_labels)[1:]
+        num_instances = len(instance_ids)
+        num_points = len(point_labels)
+        
+        # Create both outputs
+        target = {
+            "labels": torch.ones(num_instances, dtype=torch.long),
+            "masks": torch.zeros((num_instances, num_points), dtype=torch.bool)
+        }
+        
+        # Fill masks in one pass through instance IDs
+        for i, instance_id in enumerate(instance_ids):
+            target["masks"][i] = (point_labels == instance_id)
+        
+        input = ME.SparseTensor(
+            features = features,
+            coordinates = coords,
+        )
+        return input, target, idx
