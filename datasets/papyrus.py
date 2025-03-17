@@ -8,13 +8,13 @@ from synthetic_pages.nrrd_file import Nrrd
 from volume_pointcloud_conversion import dense_volume_with_labels_to_points
 
 
-class PapyrusExample:
+class PapyrusVolume:
     def __init__(self, volume_nrrd: Nrrd, labelmap_nrrd: Nrrd):
         # Convert to point cloud format 
         coords, features, labels = dense_volume_with_labels_to_points(
             volume_nrrd, 
             labelmap_nrrd,
-            min_density=0.1,  # Tune this threshold based on your data
+            min_density=0.1, # Tune this threshold based on your data
             subsample_factor=4 # Can adjust based on memory constraints
         )
         
@@ -23,7 +23,6 @@ class PapyrusExample:
         self.features = features   # Density values at points
         self.labels = labels       # Instance labels at points
         self.num_instances = len(np.unique(labels[labels > 0]))
-        self.point2segment = None  # Optional, for segment-based training
         
         # Create target format Mask3D expects
         self.target = {
@@ -41,17 +40,17 @@ class PapyrusDataset(torch.utils.data.Dataset):
         Args:
             nrrd_paths: List of (volume_path, labelmap_path) pairs
         """
-        self.examples = []
+        self.papyrus_volumes = []
         for vol_path, label_path in nrrd_paths:
             volume = Nrrd.from_file(vol_path)
             labelmap = Nrrd.from_file(label_path)
-            self.examples.append(PapyrusExample(volume, labelmap))
+            self.papyrus_volumes.append(PapyrusVolume(volume, labelmap))
             
     def __len__(self):
-        return len(self.examples)
+        return len(self.papyrus_volumes)
         
     def __getitem__(self, idx):
-        example = self.examples[idx]
+        example = self.papyrus_volumes[idx]
         return (
             ME.SparseTensor(
                 features=example.features,
