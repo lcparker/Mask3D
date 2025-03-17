@@ -65,8 +65,8 @@ def dense_volume_with_labels_to_points(volume_nrrd: Nrrd, label_nrrd: Nrrd, min_
     occupied = np.where((volume > min_density) & (labelmap > 0))
     
     # Stack coordinates
-    coords = np.stack(occupied, axis=1)
-    features = volume[occupied][:, None]
+    coords = np.stack(occupied, axis=1) # Uses indices as coordinates
+    features = volume[occupied][:, None] # Not sure about this...
     point_labels = labelmap[occupied]
     
     # Subsample points while maintaining sheet structure
