@@ -5,7 +5,7 @@ export TORCH_CUDA_ARCH_LIST="6.0 6.1 6.2 7.0 7.2 7.5 8.0 8.6"
 
 # install cuda 11.3 toolkit
 if [ ! -f "cuda_11.3.0_465.19.01_linux.run" ]; then
-    wget https://developer.download.nvidia.com/compute/cuda/11.3.0/local_installers/cuda_12.3.0_465.19.01_linux.run
+    wget https://developer.download.nvidia.com/compute/cuda/11.3.0/local_installers/cuda_11.3.0_465.19.01_linux.run
 fi
 apt --purge remove "*cuda*" "*cublas*" "*cufft*" "*cufile*" "*curand*" "*cusolver*" "*cusparse*" "*gds-tools*" "*npp*" "*nvjpeg*" --yes --allow-change-held-packages || echo "No CUDA packages found or removal failed"
 apt autoremove -y
