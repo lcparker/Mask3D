@@ -1,34 +1,30 @@
+# @package _group_
 # configs/data/papyrus.yaml
-data:
-  reference_volume: "reference_volume.nrrd"
-  reference_labels: "reference_labels.nrrd"
-  batch_size: 4
-  num_workers: 4
+reference_volume: "reference_volume.nrrd"
+reference_labels: "reference_labels.nrrd"
 
-  train_dataset:
-    _target_: datasets.papyrus.PapyrusDataset
-    reference_volume_filename: ${data.reference_volume}
-    reference_label_filename: ${data.reference_labels}
-    spatial_transform: True
-    layer_dropout: True 
-    layer_shuffle: True
-    mode: "train"
+# splits
+train_mode: train
+validation_mode: validation
+test_mode: validation
 
-  validation_dataset:
-    _target_: datasets.papyrus.PapyrusDataset
-    reference_volume_filename: ${data.reference_volume}
-    reference_label_filename: ${data.reference_labels}
-    spatial_transform: False
-    layer_dropout: False
-    layer_shuffle: False
-    mode: "val"
+# dataset
+ignore_label: 255
+add_distance: true # 1dim
+add_reflection: true # 1dim
+add_normals: false
+in_channels: 2 # in_channels = add_distance + add_reflection
+num_labels: 19
+add_instance: false
+num_workers: 4
+batch_size: 5
+test_batch_size: 1
 
-  train_dataloader:
-    batch_size: ${data.batch_size}
-    num_workers: ${data.num_workers}
-    shuffle: True
+# data loader
+pin_memory: true
+sweep: 1
 
-  validation_dataloader:
-    batch_size: 1  # Usually 1 for validation
-    num_workers: ${data.num_workers}
-    shuffle: False
+# collation
+voxel_size: 0.15
+
+

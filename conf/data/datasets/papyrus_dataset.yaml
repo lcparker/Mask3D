@@ -1,0 +1,27 @@
+# @package data
+train_dataset:
+  _target_: datasets.papyrus.SyntheticPapyrusDataset
+  reference_volume_filename: ${data.reference_volume}
+  reference_label_filename: ${data.reference_labels}
+  spatial_transform: True
+  layer_dropout: True 
+  layer_shuffle: True
+  mode: "{data.train_mode}"
+
+validation_dataset:
+  _target_: datasets.papyrus.SyntheticPapyrusDataset
+  reference_volume_filename: ${data.reference_volume}
+  reference_label_filename: ${data.reference_labels}
+  spatial_transform: False
+  layer_dropout: False
+  layer_shuffle: False
+  mode: "${data.validation_mode}"
+
+test_dataset:
+  _target_: datasets.papyrus.SyntheticPapyrusDataset
+  reference_volume_filename: ${data.reference_volume}
+  reference_label_filename: ${data.reference_labels}
+  spatial_transform: False
+  layer_dropout: False
+  layer_shuffle: False
+  mode: "${data.test_mode}"

@@ -52,10 +52,10 @@ general:
   gpus: 1
 
 defaults:
-  - data: indoor
+  - data: papyrus
   - data/data_loaders: simple_loader
-  - data/datasets: scannet
-  - data/collation_functions: voxelize_collate
+  - data/datasets: papyrus_dataset
+  - data/collation_functions: voxelize_collate_papyrus
   - logging: full
   - model: mask3d
   - metrics: miou
