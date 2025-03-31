@@ -38,17 +38,45 @@ python -m pip install 'git+https://github.com/facebookresearch/detectron2.git@71
 mkdir -p third_party
 cd third_party
 
-git clone --recursive "https://github.com/NVIDIA/MinkowskiEngine"
-cd MinkowskiEngine
-rm requirements.txt
+if [ -d "MinkowskiEngine" ]; then
+    echo "MinkowskiEngine directory already exists."
+    
+    # Check if it's a git repository
+    if [ -d "MinkowskiEngine/.git" ]; then
+        echo "Updating existing repository to specific commit..."
+        cd MinkowskiEngine
+        # Fetch all changes but don't merge them
+        git fetch --all
+        # Hard reset to the specific commit
+        git reset --hard 02fc608bea4c0549b0a7b00ca1bf15dee4a0b228
+        # Update submodules if any
+        git submodule update --init --recursive
+    else
+        echo "Directory exists but is not a git repository. Removing and cloning fresh..."
+        rm -rf MinkowskiEngine
+        git clone --recursive "https://github.com/NVIDIA/MinkowskiEngine"
+        cd MinkowskiEngine
+        git checkout 02fc608bea4c0549b0a7b00ca1bf15dee4a0b228
+    fi
+else
+    echo "Cloning MinkowskiEngine repository..."
+    git clone --recursive "https://github.com/NVIDIA/MinkowskiEngine"
+    cd MinkowskiEngine
+    git checkout 02fc608bea4c0549b0a7b00ca1bf15dee4a0b228
+fi
+
+# Common steps after having the right repository state
+rm -f requirements.txt
 echo "numpy" > requirements.txt
-git checkout 02fc608bea4c0549b0a7b00ca1bf15dee4a0b228
 python setup.py install --force_cuda --blas=openblas
 
 cd ..
-git clone https://github.com/ScanNet/ScanNet.git
+if [ ! -d "ScanNet" ]; then
+    git clone https://github.com/ScanNet/ScanNet.git
+fi
 cd ScanNet/Segmentator
-git checkout 3e5726500896748521a6ceb81271b0f5b2c0e7d2
+git fetch --all
+git reset --hard 3e5726500896748521a6ceb81271b0f5b2c0e7d2
 make
 
 cd ../../pointnet2
