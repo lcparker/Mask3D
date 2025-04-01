@@ -375,7 +375,6 @@ class Mask3D(nn.Module):
                         len(aux) - hlevel - 1,
                         ret_attn_mask=True,
                         point2segment=point2segment,
-                        coords=coords,
                     )
                 else:
                     output_class, outputs_mask, attn_mask = self.mask_module(
@@ -385,7 +384,6 @@ class Mask3D(nn.Module):
                         len(aux) - hlevel - 1,
                         ret_attn_mask=True,
                         point2segment=None,
-                        coords=coords,
                     )
 
                 decomposed_aux = aux[hlevel].decomposed_features
@@ -512,7 +510,6 @@ class Mask3D(nn.Module):
                 0,
                 ret_attn_mask=False,
                 point2segment=point2segment,
-                coords=coords,
             )
         else:
             output_class, outputs_mask = self.mask_module(
@@ -522,7 +519,6 @@ class Mask3D(nn.Module):
                 0,
                 ret_attn_mask=False,
                 point2segment=None,
-                coords=coords,
             )
         predictions_class.append(output_class)
         predictions_mask.append(outputs_mask)
@@ -547,7 +543,6 @@ class Mask3D(nn.Module):
         num_pooling_steps,
         ret_attn_mask=True,
         point2segment=None,
-        coords=None,
     ):
         query_feat = self.decoder_norm(query_feat)
         mask_embed = self.mask_embed_head(query_feat)
