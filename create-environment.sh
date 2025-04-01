@@ -87,4 +87,4 @@ python -m pip install pytorch-lightning==1.7.2 --no-deps
 python -m pip install torchmetrics==1.5.2 --no-deps
 pip install -r lightning-1.7.2-requirements.txt
 
-echo "Make sure to add /usr/local/cuda-11.3/targets/x86_64-linux/lib to \$LD_LIBRARY_PATH"
+echo "Make sure to export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/usr/local/cuda-11.3/targets/x86_64-linux/lib"
