@@ -99,10 +99,6 @@ class SyntheticPapyrusDataset(torch.utils.data.Dataset):
         for i, instance_id in enumerate(instance_ids):
             target["masks"][i] = (point_labels == instance_id)
         
-        # input = ME.SparseTensor(
-        #     features = features,
-        #     coordinates = coords,
-        # )
         return (coords.numpy(), 
                 features.numpy(), 
                 target, 
@@ -111,4 +107,3 @@ class SyntheticPapyrusDataset(torch.utils.data.Dataset):
                 None, 
                 None, 
                 idx)
-        # return input, target, idx
