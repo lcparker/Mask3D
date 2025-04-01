@@ -86,22 +86,17 @@ class SyntheticPapyrusDataset(torch.utils.data.Dataset):
         
         # Get instance IDs once, excluding background (0)
         instance_ids = torch.unique(point_labels)[1:]
-        num_instances = len(instance_ids)
         num_points = len(point_labels)
         
-        # Create both outputs
-        target = {
-            "labels": torch.ones(num_instances, dtype=torch.long).numpy(),
-            "masks": torch.zeros((num_instances, num_points), dtype=torch.bool).numpy()
-        }
+        # Create the (M, 2) tensor
+        segmentation_instance_tensor = torch.zeros((num_points, 2), dtype=torch.long)
+        segmentation_instance_tensor[:, 0] = 1  # Segmentation index (1 for every label)
+        segmentation_instance_tensor[:, 1] = point_labels  # Instance labels
         
-        # Fill masks in one pass through instance IDs
-        for i, instance_id in enumerate(instance_ids):
-            target["masks"][i] = (point_labels == instance_id)
-        
+        # Return the updated output
         return (coords.numpy(), 
                 features.numpy(), 
-                target, 
+                segmentation_instance_tensor.numpy(), 
                 None, 
                 None, 
                 None, 
