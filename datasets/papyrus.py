@@ -73,6 +73,7 @@ class SyntheticPapyrusDataset(torch.utils.data.Dataset):
             layer_dropout=layer_dropout,
             layer_shuffle=layer_shuffle
         )
+        self.label_info = None
         
     def __len__(self):
         return 500  # Same as synthetic dataset
@@ -90,16 +91,24 @@ class SyntheticPapyrusDataset(torch.utils.data.Dataset):
         
         # Create both outputs
         target = {
-            "labels": torch.ones(num_instances, dtype=torch.long),
-            "masks": torch.zeros((num_instances, num_points), dtype=torch.bool)
+            "labels": torch.ones(num_instances, dtype=torch.long).numpy(),
+            "masks": torch.zeros((num_instances, num_points), dtype=torch.bool).numpy()
         }
         
         # Fill masks in one pass through instance IDs
         for i, instance_id in enumerate(instance_ids):
             target["masks"][i] = (point_labels == instance_id)
         
-        input = ME.SparseTensor(
-            features = features,
-            coordinates = coords,
-        )
-        return input, target, idx
+        # input = ME.SparseTensor(
+        #     features = features,
+        #     coordinates = coords,
+        # )
+        return (coords.numpy(), 
+                features.numpy(), 
+                target, 
+                None, 
+                None, 
+                None, 
+                None, 
+                idx)
+        # return input, target, idx
