@@ -59,162 +59,6 @@ class VoxelizeCollate:
         )
 
 
-class VoxelizeCollateMerge:
-    def __init__(
-        self,
-        ignore_label=255,
-        voxel_size=1,
-        mode="test",
-        scenes=2,
-        small_crops=False,
-        very_small_crops=False,
-        batch_instance=False,
-        make_one_pc_noise=False,
-        place_nearby=False,
-        place_far=False,
-        proba=1,
-        probing=False,
-        task="instance_segmentation",
-    ):
-        assert task in [
-            "instance_segmentation",
-            "semantic_segmentation",
-        ], "task not known"
-        self.task = task
-        self.mode = mode
-        self.scenes = scenes
-        self.small_crops = small_crops
-        self.very_small_crops = very_small_crops
-        self.ignore_label = ignore_label
-        self.voxel_size = voxel_size
-        self.batch_instance = batch_instance
-        self.make_one_pc_noise = make_one_pc_noise
-        self.place_nearby = place_nearby
-        self.place_far = place_far
-        self.proba = proba
-        self.probing = probing
-
-    def __call__(self, batch):
-        if (
-            ("train" in self.mode)
-            and (not self.make_one_pc_noise)
-            and (self.proba > random())
-        ):
-            if self.small_crops or self.very_small_crops:
-                batch = make_crops(batch)
-            if self.very_small_crops:
-                batch = make_crops(batch)
-            if self.batch_instance:
-                batch = batch_instances(batch)
-            new_batch = []
-            for i in range(0, len(batch), self.scenes):
-                batch_coordinates = []
-                batch_features = []
-                batch_labels = []
-
-                batch_filenames = ""
-                batch_raw_color = []
-                batch_raw_normals = []
-
-                offset_instance_id = 0
-                offset_segment_id = 0
-
-                for j in range(min(len(batch[i:]), self.scenes)):
-                    batch_coordinates.append(batch[i + j][0])
-                    batch_features.append(batch[i + j][1])
-
-                    if j == 0:
-                        batch_filenames = batch[i + j][3]
-                    else:
-                        batch_filenames = (
-                            batch_filenames + f"+{batch[i + j][3]}"
-                        )
-
-                    batch_raw_color.append(batch[i + j][4])
-                    batch_raw_normals.append(batch[i + j][5])
-
-                    # make instance ids and segment ids unique
-                    # take care that -1 instances stay at -1
-                    batch_labels.append(
-                        batch[i + j][2]
-                        + [0, offset_instance_id, offset_segment_id]
-                    )
-                    batch_labels[-1][batch[i + j][2][:, 1] == -1, 1] = -1
-
-                    max_instance_id, max_segment_id = batch[i + j][2].max(
-                        axis=0
-                    )[1:]
-                    offset_segment_id = offset_segment_id + max_segment_id + 1
-                    offset_instance_id = (
-                        offset_instance_id + max_instance_id + 1
-                    )
-
-                if (len(batch_coordinates) == 2) and self.place_nearby:
-                    border = batch_coordinates[0][:, 0].max()
-                    border -= batch_coordinates[1][:, 0].min()
-                    batch_coordinates[1][:, 0] += border
-                elif (len(batch_coordinates) == 2) and self.place_far:
-                    batch_coordinates[1] += (
-                        np.random.uniform((-10, -10, -10), (10, 10, 10)) * 200
-                    )
-                new_batch.append(
-                    (
-                        np.vstack(batch_coordinates),
-                        np.vstack(batch_features),
-                        np.concatenate(batch_labels),
-                        batch_filenames,
-                        np.vstack(batch_raw_color),
-                        np.vstack(batch_raw_normals),
-                    )
-                )
-            # TODO WHAT ABOUT POINT2SEGMENT AND SO ON ...
-            batch = new_batch
-        elif ("train" in self.mode) and self.make_one_pc_noise:
-            new_batch = []
-            for i in range(0, len(batch), 2):
-                if (i + 1) < len(batch):
-                    new_batch.append(
-                        [
-                            np.vstack((batch[i][0], batch[i + 1][0])),
-                            np.vstack((batch[i][1], batch[i + 1][1])),
-                            np.concatenate(
-                                (
-                                    batch[i][2],
-                                    np.full_like(
-                                        batch[i + 1][2], self.ignore_label
-                                    ),
-                                )
-                            ),
-                        ]
-                    )
-                    new_batch.append(
-                        [
-                            np.vstack((batch[i][0], batch[i + 1][0])),
-                            np.vstack((batch[i][1], batch[i + 1][1])),
-                            np.concatenate(
-                                (
-                                    np.full_like(
-                                        batch[i][2], self.ignore_label
-                                    ),
-                                    batch[i + 1][2],
-                                )
-                            ),
-                        ]
-                    )
-                else:
-                    new_batch.append([batch[i][0], batch[i][1], batch[i][2]])
-            batch = new_batch
-        # return voxelize(batch, self.ignore_label, self.voxel_size, self.probing, self.mode)
-        return voxelize(
-            batch,
-            self.ignore_label,
-            self.voxel_size,
-            self.probing,
-            self.mode,
-            task=self.task,
-        )
-
-
 def batch_instances(batch):
     new_batch = []
     for sample in batch:
@@ -263,17 +107,17 @@ def voxelize(
 
     for sample in batch:
         idx.append(sample[7])
-        original_coordinates.append(sample[6])
-        original_labels.append(sample[2])
-        full_res_coords.append(sample[0])
-        original_colors.append(sample[4])
-        original_normals.append(sample[5])
+        original_coordinates.append(sample[6]) # subsampled coordinates?
+        original_labels.append(sample[2]) # 
+        full_res_coords.append(sample[0]) # have correctly included
+        original_colors.append(sample[4]) # don't include
+        original_normals.append(sample[5]) # don't include
 
-        coords = np.floor(sample[0] / voxel_size)
+        coords = np.floor(sample[0] / voxel_size) # convert from world coordinates to units of voxel size
         voxelization_dict.update(
             {
                 "coordinates": torch.from_numpy(coords).to("cpu").contiguous(),
-                "features": sample[1],
+                "features": sample[1], # features are the intensities (greyscale i think) at those coordinates
             }
         )
 
@@ -313,7 +157,7 @@ def voxelize(
         )
 
     if mode == "test":
-        for i in range(len(input_dict["labels"])):
+        for i in range(len(input_dict["labels"])): # batch iteration
             _, ret_index, ret_inv = np.unique(
                 input_dict["labels"][i][:, 0],
                 return_index=True,
@@ -325,10 +169,10 @@ def voxelize(
         input_dict["segment2label"] = []
 
         if "labels" in input_dict:
-            for i in range(len(input_dict["labels"])):
+            for i in range(len(input_dict["labels"])): # batch iteration
                 # TODO BIGGER CHANGE CHECK!!!
                 _, ret_index, ret_inv = np.unique(
-                    input_dict["labels"][i][:, -1],
+                    input_dict["labels"][i][:, -1], # -1th index in batch i
                     return_index=True,
                     return_inverse=True,
                 )
@@ -372,14 +216,14 @@ def voxelize(
             else:
                 target = get_instance_masks(
                     list_labels,
-                    list_segments=input_dict["segment2label"],
+                    # list_segments=input_dict["segment2label"], # remove since we don't care about segment masks
                     task=task,
                     ignore_class_threshold=ignore_class_threshold,
                     filter_out_classes=filter_out_classes,
                     label_offset=label_offset,
                 )
-                for i in range(len(target)):
-                    target[i]["point2segment"] = input_dict["labels"][i][:, 2]
+                for i in range(len(target)): # batch iteration?
+                    target[i]["point2segment"] = input_dict["labels"][i][:, 2] # what's the difference between labels[:, 0] and labels[:, 2?]
                 if "train" not in mode:
                     target_full = get_instance_masks(
                         [torch.from_numpy(l) for l in original_labels],
@@ -430,7 +274,7 @@ def voxelize(
 
 
 def get_instance_masks(
-    list_labels,
+    list_labels_BM3, # (B, M, 3) # final index is [0] for instance->segment and [1] for point->instance ids and [2] for point->segment ids
     task,
     list_segments=None,
     ignore_class_threshold=100,
@@ -439,11 +283,11 @@ def get_instance_masks(
 ):
     target = []
 
-    for batch_id in range(len(list_labels)):
+    for batch_id in range(len(list_labels_BM3)):
         label_ids = []
         masks = []
         segment_masks = []
-        instance_ids = list_labels[batch_id][:, 1].unique()
+        instance_ids = list_labels_BM3[batch_id][:, 1].unique()
 
         for instance_id in instance_ids:
             if instance_id == -1:
@@ -451,9 +295,7 @@ def get_instance_masks(
 
             # TODO is it possible that a ignore class (255) is an instance???
             # instance == -1 ???
-            tmp = list_labels[batch_id][
-                list_labels[batch_id][:, 1] == instance_id
-            ]
+            tmp = list_labels_BM3[batch_id][list_labels_BM3[batch_id][:, 1] == instance_id ]
             label_id = tmp[0, 0]
 
             if (
@@ -469,17 +311,20 @@ def get_instance_masks(
                 continue
 
             label_ids.append(label_id)
-            masks.append(list_labels[batch_id][:, 1] == instance_id)
+            masks.append(list_labels_BM3[batch_id][:, 1] == instance_id)
 
             if list_segments:
                 segment_mask = torch.zeros(
                     list_segments[batch_id].shape[0]
                 ).bool()
-                segment_mask[
-                    list_labels[batch_id][
-                        list_labels[batch_id][:, 1] == instance_id
-                    ][:, 2].unique()
-                ] = True
+                # For each instance, get the seegments it belongs to (surely
+                # just one?) and set its index in segment_mask to True
+                # (indicating that it is
+                labels_M2 = list_labels_BM3[batch_id]
+                voxels_for_current_instance = labels_M2[:, 1] == instance_id
+                segments_present_in_current_instance = labels_M2[voxels_for_current_instance][:, 2].unique()
+                # Segments belonging to the current instance (can seemingly be more than one)
+                segment_mask[segments_present_in_current_instance] = True 
                 segment_masks.append(segment_mask)
 
         if len(label_ids) == 0:
@@ -637,3 +482,160 @@ class NoGpuMask:
 
         self.masks = masks
         self.labels = labels
+
+"""
+class VoxelizeCollateMerge:
+    def __init__(
+        self,
+        ignore_label=255,
+        voxel_size=1,
+        mode="test",
+        scenes=2,
+        small_crops=False,
+        very_small_crops=False,
+        batch_instance=False,
+        make_one_pc_noise=False,
+        place_nearby=False,
+        place_far=False,
+        proba=1,
+        probing=False,
+        task="instance_segmentation",
+    ):
+        assert task in [
+            "instance_segmentation",
+            "semantic_segmentation",
+        ], "task not known"
+        self.task = task
+        self.mode = mode
+        self.scenes = scenes
+        self.small_crops = small_crops
+        self.very_small_crops = very_small_crops
+        self.ignore_label = ignore_label
+        self.voxel_size = voxel_size
+        self.batch_instance = batch_instance
+        self.make_one_pc_noise = make_one_pc_noise
+        self.place_nearby = place_nearby
+        self.place_far = place_far
+        self.proba = proba
+        self.probing = probing
+
+    def __call__(self, batch):
+        if (
+            ("train" in self.mode)
+            and (not self.make_one_pc_noise)
+            and (self.proba > random())
+        ):
+            if self.small_crops or self.very_small_crops:
+                batch = make_crops(batch)
+            if self.very_small_crops:
+                batch = make_crops(batch)
+            if self.batch_instance:
+                batch = batch_instances(batch)
+            new_batch = []
+            for i in range(0, len(batch), self.scenes):
+                batch_coordinates = []
+                batch_features = []
+                batch_labels = []
+
+                batch_filenames = ""
+                batch_raw_color = []
+                batch_raw_normals = []
+
+                offset_instance_id = 0
+                offset_segment_id = 0
+
+                for j in range(min(len(batch[i:]), self.scenes)):
+                    batch_coordinates.append(batch[i + j][0])
+                    batch_features.append(batch[i + j][1])
+
+                    if j == 0:
+                        batch_filenames = batch[i + j][3]
+                    else:
+                        batch_filenames = (
+                            batch_filenames + f"+{batch[i + j][3]}"
+                        )
+
+                    batch_raw_color.append(batch[i + j][4])
+                    batch_raw_normals.append(batch[i + j][5])
+
+                    # make instance ids and segment ids unique
+                    # take care that -1 instances stay at -1
+                    batch_labels.append(
+                        batch[i + j][2]
+                        + [0, offset_instance_id, offset_segment_id]
+                    )
+                    batch_labels[-1][batch[i + j][2][:, 1] == -1, 1] = -1
+
+                    max_instance_id, max_segment_id = batch[i + j][2].max(
+                        axis=0
+                    )[1:]
+                    offset_segment_id = offset_segment_id + max_segment_id + 1
+                    offset_instance_id = (
+                        offset_instance_id + max_instance_id + 1
+                    )
+
+                if (len(batch_coordinates) == 2) and self.place_nearby:
+                    border = batch_coordinates[0][:, 0].max()
+                    border -= batch_coordinates[1][:, 0].min()
+                    batch_coordinates[1][:, 0] += border
+                elif (len(batch_coordinates) == 2) and self.place_far:
+                    batch_coordinates[1] += (
+                        np.random.uniform((-10, -10, -10), (10, 10, 10)) * 200
+                    )
+                new_batch.append(
+                    (
+                        np.vstack(batch_coordinates),
+                        np.vstack(batch_features),
+                        np.concatenate(batch_labels),
+                        batch_filenames,
+                        np.vstack(batch_raw_color),
+                        np.vstack(batch_raw_normals),
+                    )
+                )
+            # TODO WHAT ABOUT POINT2SEGMENT AND SO ON ...
+            batch = new_batch
+        elif ("train" in self.mode) and self.make_one_pc_noise:
+            new_batch = []
+            for i in range(0, len(batch), 2):
+                if (i + 1) < len(batch):
+                    new_batch.append(
+                        [
+                            np.vstack((batch[i][0], batch[i + 1][0])),
+                            np.vstack((batch[i][1], batch[i + 1][1])),
+                            np.concatenate(
+                                (
+                                    batch[i][2],
+                                    np.full_like(
+                                        batch[i + 1][2], self.ignore_label
+                                    ),
+                                )
+                            ),
+                        ]
+                    )
+                    new_batch.append(
+                        [
+                            np.vstack((batch[i][0], batch[i + 1][0])),
+                            np.vstack((batch[i][1], batch[i + 1][1])),
+                            np.concatenate(
+                                (
+                                    np.full_like(
+                                        batch[i][2], self.ignore_label
+                                    ),
+                                    batch[i + 1][2],
+                                )
+                            ),
+                        ]
+                    )
+                else:
+                    new_batch.append([batch[i][0], batch[i][1], batch[i][2]])
+            batch = new_batch
+        # return voxelize(batch, self.ignore_label, self.voxel_size, self.probing, self.mode)
+        return voxelize(
+            batch,
+            self.ignore_label,
+            self.voxel_size,
+            self.probing,
+            self.mode,
+            task=self.task,
+        )
+"""
