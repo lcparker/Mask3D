@@ -13,6 +13,7 @@ ignore_label: 255
 add_distance: true # 1dim
 add_reflection: true # 1dim
 add_normals: false
+add_raw_coordinates: false
 in_channels: 2 # in_channels = add_distance + add_reflection
 num_labels: 19
 add_instance: false
