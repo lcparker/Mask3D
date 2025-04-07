@@ -442,6 +442,7 @@ class InstanceSegmentation(pl.LightningModule):
         )
 
     def eval_step(self, batch, batch_idx):
+        breakpoint()
         data, target, file_names = batch
         inverse_maps = data.inverse_maps
         target_full = data.target_full
@@ -462,7 +463,7 @@ class InstanceSegmentation(pl.LightningModule):
             raw_coordinates = data.features[:, -3:]
             data.features = data.features[:, :-3]
 
-        if raw_coordinates.shape[0] == 0:
+        if raw_coordinates and raw_coordinates.shape[0] == 0:
             return 0.0
 
         data = ME.SparseTensor(
@@ -634,13 +635,7 @@ class InstanceSegmentation(pl.LightningModule):
             }
         )
 
-        prediction[self.decoder_id][
-            "pred_logits"
-        ] = torch.functional.F.softmax(
-            prediction[self.decoder_id]["pred_logits"], dim=-1
-        )[
-            ..., :-1
-        ]
+        prediction[self.decoder_id][ "pred_logits" ] = torch.functional.F.softmax( prediction[self.decoder_id]["pred_logits"], dim=-1)[ ..., :-1 ]
 
         all_pred_classes = list()
         all_pred_masks = list()
@@ -658,11 +653,7 @@ class InstanceSegmentation(pl.LightningModule):
                         .cpu()[target_low_res[bid]["point2segment"].cpu()]
                     )
                 else:
-                    masks = (
-                        prediction[self.decoder_id]["pred_masks"][bid]
-                        .detach()
-                        .cpu()
-                    )
+                    masks = ( prediction[self.decoder_id]["pred_masks"][bid] .detach() .cpu())
 
                 if self.config.general.use_dbscan:
                     new_preds = {
@@ -671,9 +662,7 @@ class InstanceSegmentation(pl.LightningModule):
                     }
 
                     curr_coords_idx = masks.shape[0]
-                    curr_coords = raw_coords[
-                        offset_coords_idx : curr_coords_idx + offset_coords_idx
-                    ]
+                    curr_coords = raw_coords[ offset_coords_idx : curr_coords_idx + offset_coords_idx ]
                     offset_coords_idx += curr_coords_idx
 
                     for curr_query in range(masks.shape[1]):
@@ -681,32 +670,19 @@ class InstanceSegmentation(pl.LightningModule):
 
                         if curr_coords[curr_masks].shape[0] > 0:
                             clusters = (
-                                DBSCAN(
-                                    eps=self.config.general.dbscan_eps,
-                                    min_samples=self.config.general.dbscan_min_points,
-                                    n_jobs=-1,
-                                )
+                                DBSCAN( eps=self.config.general.dbscan_eps, min_samples=self.config.general.dbscan_min_points, n_jobs=-1,)
                                 .fit(curr_coords[curr_masks])
                                 .labels_
                             )
 
                             new_mask = torch.zeros(curr_masks.shape, dtype=int)
-                            new_mask[curr_masks] = (
-                                torch.from_numpy(clusters) + 1
-                            )
+                            new_mask[curr_masks] = ( torch.from_numpy(clusters) + 1)
 
                             for cluster_id in np.unique(clusters):
                                 original_pred_masks = masks[:, curr_query]
                                 if cluster_id != -1:
-                                    new_preds["pred_masks"].append(
-                                        original_pred_masks
-                                        * (new_mask == cluster_id + 1)
-                                    )
-                                    new_preds["pred_logits"].append(
-                                        prediction[self.decoder_id][
-                                            "pred_logits"
-                                        ][bid, curr_query]
-                                    )
+                                    new_preds["pred_masks"].append( original_pred_masks * (new_mask == cluster_id + 1))
+                                    new_preds["pred_logits"].append( prediction[self.decoder_id][ "pred_logits" ][bid, curr_query])
 
                     scores, masks, classes, heatmap = self.get_mask_and_scores(
                         torch.stack(new_preds["pred_logits"]).cpu(),
@@ -716,13 +692,9 @@ class InstanceSegmentation(pl.LightningModule):
                     )
                 else:
                     scores, masks, classes, heatmap = self.get_mask_and_scores(
-                        prediction[self.decoder_id]["pred_logits"][bid]
-                        .detach()
-                        .cpu(),
+                        prediction[self.decoder_id]["pred_logits"][bid] .detach() .cpu(),
                         masks,
-                        prediction[self.decoder_id]["pred_logits"][bid].shape[
-                            0
-                        ],
+                        prediction[self.decoder_id]["pred_logits"][bid].shape[ 0 ],
                         self.model.num_classes - 1,
                     )
 
@@ -991,6 +963,7 @@ class InstanceSegmentation(pl.LightningModule):
 
         head_results, tail_results, common_results = [], [], []
 
+        breakpoint()
         box_ap_50 = eval_det(
             self.bbox_preds, self.bbox_gt, ovthresh=0.5, use_07_metric=False
         )
