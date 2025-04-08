@@ -123,6 +123,9 @@ def voxelize(
 
         # maybe this change (_, _, ...) is not necessary and we can directly get out
         # the sample coordinates?
+        # LP: I agree with above, might be worth changing it back... but i'm too scared while things aren't working
+        # WHAT IS ALL THIS CODE FOR UGHHHHHHHHHHHHh
+        breakpoint()
         _, _, unique_map, inverse_map = ME.utils.sparse_quantize(
             **voxelization_dict
         )
@@ -146,15 +149,8 @@ def voxelize(
         labels = torch.Tensor([])
 
     if probing:
-        return (
-            NoGpu(
-                coordinates,
-                features,
-                original_labels,
-                inverse_maps,
-            ),
-            labels,
-        )
+        # Probing is False, so this is unused
+        raise NotImplementedError("This should never be called. Add back in the git history if it is.")
 
     if mode == "test":
         for i in range(len(input_dict["labels"])): # batch iteration
