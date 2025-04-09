@@ -442,18 +442,16 @@ class InstanceSegmentation(pl.LightningModule):
         )
 
     def eval_step(self, batch, batch_idx):
-        breakpoint()
         data, target, file_names = batch
         inverse_maps = data.inverse_maps
+        
+        # --------- eval-only parameters (not set in train mode)
         target_full = data.target_full
         original_colors = data.original_colors
         data_idx = data.idx
         original_normals = data.original_normals
         original_coordinates = data.original_coordinates
-
-        # if len(target) == 0 or len(target_full) == 0:
-        #    print("no targets")
-        #    return None
+        # ---------
 
         if len(data.coordinates) == 0:
             return 0.0
@@ -644,16 +642,16 @@ class InstanceSegmentation(pl.LightningModule):
         all_query_pos = list()
 
         offset_coords_idx = 0
-        for bid in range(len(prediction[self.decoder_id]["pred_masks"])):
+        for batch_id in range(len(prediction[self.decoder_id]["pred_masks"])):
             if not first_full_res:
                 if self.model.train_on_segments:
                     masks = (
-                        prediction[self.decoder_id]["pred_masks"][bid]
+                        prediction[self.decoder_id]["pred_masks"][batch_id]
                         .detach()
-                        .cpu()[target_low_res[bid]["point2segment"].cpu()]
+                        .cpu()[target_low_res[batch_id]["point2segment"].cpu()]
                     )
                 else:
-                    masks = ( prediction[self.decoder_id]["pred_masks"][bid] .detach() .cpu())
+                    masks = ( prediction[self.decoder_id]["pred_masks"][batch_id] .detach() .cpu())
 
                 if self.config.general.use_dbscan:
                     new_preds = {
@@ -682,7 +680,7 @@ class InstanceSegmentation(pl.LightningModule):
                                 original_pred_masks = masks[:, curr_query]
                                 if cluster_id != -1:
                                     new_preds["pred_masks"].append( original_pred_masks * (new_mask == cluster_id + 1))
-                                    new_preds["pred_logits"].append( prediction[self.decoder_id][ "pred_logits" ][bid, curr_query])
+                                    new_preds["pred_logits"].append( prediction[self.decoder_id][ "pred_logits" ][batch_id, curr_query])
 
                     scores, masks, classes, heatmap = self.get_mask_and_scores(
                         torch.stack(new_preds["pred_logits"]).cpu(),
@@ -692,48 +690,33 @@ class InstanceSegmentation(pl.LightningModule):
                     )
                 else:
                     scores, masks, classes, heatmap = self.get_mask_and_scores(
-                        prediction[self.decoder_id]["pred_logits"][bid] .detach() .cpu(),
+                        prediction[self.decoder_id]["pred_logits"][batch_id] .detach() .cpu(),
                         masks,
-                        prediction[self.decoder_id]["pred_logits"][bid].shape[ 0 ],
+                        prediction[self.decoder_id]["pred_logits"][batch_id].shape[ 0 ],
                         self.model.num_classes - 1,
                     )
 
                 masks = self.get_full_res_mask(
                     masks,
-                    inverse_maps[bid],
-                    target_full_res[bid]["point2segment"],
+                    inverse_maps[batch_id],
+                    target_full_res[batch_id]["point2segment"],
                 )
 
                 heatmap = self.get_full_res_mask(
                     heatmap,
-                    inverse_maps[bid],
-                    target_full_res[bid]["point2segment"],
+                    inverse_maps[batch_id],
+                    target_full_res[batch_id]["point2segment"],
                     is_heatmap=True,
                 )
 
                 if backbone_features is not None:
                     backbone_features = self.get_full_res_mask(
                         torch.from_numpy(backbone_features),
-                        inverse_maps[bid],
-                        target_full_res[bid]["point2segment"],
+                        inverse_maps[batch_id],
+                        target_full_res[batch_id]["point2segment"],
                         is_heatmap=True,
                     )
                     backbone_features = backbone_features.numpy()
-            else:
-                assert False, "not tested"
-                masks = self.get_full_res_mask(
-                    prediction[self.decoder_id]["pred_masks"][bid].cpu(),
-                    inverse_maps[bid],
-                    target_full_res[bid]["point2segment"],
-                )
-
-                scores, masks, classes, heatmap = self.get_mask_and_scores(
-                    prediction[self.decoder_id]["pred_logits"][bid].cpu(),
-                    masks,
-                    prediction[self.decoder_id]["pred_logits"][bid].shape[0],
-                    self.model.num_classes - 1,
-                    device="cpu",
-                )
 
             masks = masks.numpy()
             heatmap = heatmap.numpy()
@@ -786,36 +769,36 @@ class InstanceSegmentation(pl.LightningModule):
                 all_heatmaps.append(sorted_heatmap)
 
         if self.validation_dataset.dataset_name == "scannet200":
-            all_pred_classes[bid][all_pred_classes[bid] == 0] = -1
+            all_pred_classes[batch_id][all_pred_classes[batch_id] == 0] = -1
             if self.config.data.test_mode != "test":
-                target_full_res[bid]["labels"][
-                    target_full_res[bid]["labels"] == 0
+                target_full_res[batch_id]["labels"][
+                    target_full_res[batch_id]["labels"] == 0
                 ] = -1
 
-        for bid in range(len(prediction[self.decoder_id]["pred_masks"])):
+        for batch_id in range(len(prediction[self.decoder_id]["pred_masks"])):
             all_pred_classes[
-                bid
+                batch_id
             ] = self.validation_dataset._remap_model_output(
-                all_pred_classes[bid].cpu() + label_offset
+                all_pred_classes[batch_id].cpu() + label_offset
             )
 
             if (
                 self.config.data.test_mode != "test"
                 and len(target_full_res) != 0
             ):
-                target_full_res[bid][
+                target_full_res[batch_id][
                     "labels"
                 ] = self.validation_dataset._remap_model_output(
-                    target_full_res[bid]["labels"].cpu() + label_offset
+                    target_full_res[batch_id]["labels"].cpu() + label_offset
                 )
 
                 # PREDICTION BOX
                 bbox_data = []
                 for query_id in range(
-                    all_pred_masks[bid].shape[1]
+                    all_pred_masks[batch_id].shape[1]
                 ):  # self.model.num_queries
-                    obj_coords = full_res_coords[bid][
-                        all_pred_masks[bid][:, query_id].astype(bool), :
+                    obj_coords = full_res_coords[batch_id][
+                        all_pred_masks[batch_id][:, query_id].astype(bool), :
                     ]
                     if obj_coords.shape[0] > 0:
                         obj_center = obj_coords.mean(axis=0)
@@ -827,21 +810,21 @@ class InstanceSegmentation(pl.LightningModule):
 
                         bbox_data.append(
                             (
-                                all_pred_classes[bid][query_id].item(),
+                                all_pred_classes[batch_id][query_id].item(),
                                 bbox,
-                                all_pred_scores[bid][query_id],
+                                all_pred_scores[batch_id][query_id],
                             )
                         )
-                self.bbox_preds[file_names[bid]] = bbox_data
+                self.bbox_preds[file_names[batch_id]] = bbox_data
 
                 # GT BOX
                 bbox_data = []
-                for obj_id in range(target_full_res[bid]["masks"].shape[0]):
-                    if target_full_res[bid]["labels"][obj_id].item() == 255:
+                for obj_id in range(target_full_res[batch_id]["masks"].shape[0]):
+                    if target_full_res[batch_id]["labels"][obj_id].item() == 255:
                         continue
 
-                    obj_coords = full_res_coords[bid][
-                        target_full_res[bid]["masks"][obj_id, :]
+                    obj_coords = full_res_coords[batch_id][
+                        target_full_res[batch_id]["masks"][obj_id, :]
                         .cpu()
                         .detach()
                         .numpy()
@@ -857,76 +840,76 @@ class InstanceSegmentation(pl.LightningModule):
                         bbox = np.concatenate((obj_center, obj_axis_length))
                         bbox_data.append(
                             (
-                                target_full_res[bid]["labels"][obj_id].item(),
+                                target_full_res[batch_id]["labels"][obj_id].item(),
                                 bbox,
                             )
                         )
 
-                self.bbox_gt[file_names[bid]] = bbox_data
+                self.bbox_gt[file_names[batch_id]] = bbox_data
 
             if self.config.general.eval_inner_core == -1:
-                self.preds[file_names[bid]] = {
-                    "pred_masks": all_pred_masks[bid],
-                    "pred_scores": all_pred_scores[bid],
-                    "pred_classes": all_pred_classes[bid],
+                self.preds[file_names[batch_id]] = {
+                    "pred_masks": all_pred_masks[batch_id],
+                    "pred_scores": all_pred_scores[batch_id],
+                    "pred_classes": all_pred_classes[batch_id],
                 }
             else:
                 # prev val_dataset
-                self.preds[file_names[bid]] = {
-                    "pred_masks": all_pred_masks[bid][
-                        self.test_dataset.data[idx[bid]]["cond_inner"]
+                self.preds[file_names[batch_id]] = {
+                    "pred_masks": all_pred_masks[batch_id][
+                        self.test_dataset.data[idx[batch_id]]["cond_inner"]
                     ],
-                    "pred_scores": all_pred_scores[bid],
-                    "pred_classes": all_pred_classes[bid],
+                    "pred_scores": all_pred_scores[batch_id],
+                    "pred_classes": all_pred_classes[batch_id],
                 }
 
             if self.config.general.save_visualizations:
-                if "cond_inner" in self.test_dataset.data[idx[bid]]:
-                    target_full_res[bid]["masks"] = target_full_res[bid][
+                if "cond_inner" in self.test_dataset.data[idx[batch_id]]:
+                    target_full_res[batch_id]["masks"] = target_full_res[batch_id][
                         "masks"
-                    ][:, self.test_dataset.data[idx[bid]]["cond_inner"]]
+                    ][:, self.test_dataset.data[idx[batch_id]]["cond_inner"]]
                     self.save_visualizations(
-                        target_full_res[bid],
-                        full_res_coords[bid][
-                            self.test_dataset.data[idx[bid]]["cond_inner"]
+                        target_full_res[batch_id],
+                        full_res_coords[batch_id][
+                            self.test_dataset.data[idx[batch_id]]["cond_inner"]
                         ],
-                        [self.preds[file_names[bid]]["pred_masks"]],
-                        [self.preds[file_names[bid]]["pred_classes"]],
-                        file_names[bid],
-                        original_colors[bid][
-                            self.test_dataset.data[idx[bid]]["cond_inner"]
+                        [self.preds[file_names[batch_id]]["pred_masks"]],
+                        [self.preds[file_names[batch_id]]["pred_classes"]],
+                        file_names[batch_id],
+                        original_colors[batch_id][
+                            self.test_dataset.data[idx[batch_id]]["cond_inner"]
                         ],
-                        original_normals[bid][
-                            self.test_dataset.data[idx[bid]]["cond_inner"]
+                        original_normals[batch_id][
+                            self.test_dataset.data[idx[batch_id]]["cond_inner"]
                         ],
-                        [self.preds[file_names[bid]]["pred_scores"]],
+                        [self.preds[file_names[batch_id]]["pred_scores"]],
                         sorted_heatmaps=[
-                            all_heatmaps[bid][
-                                self.test_dataset.data[idx[bid]]["cond_inner"]
+                            all_heatmaps[batch_id][
+                                self.test_dataset.data[idx[batch_id]]["cond_inner"]
                             ]
                         ],
-                        query_pos=all_query_pos[bid][
-                            self.test_dataset.data[idx[bid]]["cond_inner"]
+                        query_pos=all_query_pos[batch_id][
+                            self.test_dataset.data[idx[batch_id]]["cond_inner"]
                         ]
                         if len(all_query_pos) > 0
                         else None,
                         backbone_features=backbone_features[
-                            self.test_dataset.data[idx[bid]]["cond_inner"]
+                            self.test_dataset.data[idx[batch_id]]["cond_inner"]
                         ],
                         point_size=self.config.general.visualization_point_size,
                     )
                 else:
                     self.save_visualizations(
-                        target_full_res[bid],
-                        full_res_coords[bid],
-                        [self.preds[file_names[bid]]["pred_masks"]],
-                        [self.preds[file_names[bid]]["pred_classes"]],
-                        file_names[bid],
-                        original_colors[bid],
-                        original_normals[bid],
-                        [self.preds[file_names[bid]]["pred_scores"]],
-                        sorted_heatmaps=[all_heatmaps[bid]],
-                        query_pos=all_query_pos[bid]
+                        target_full_res[batch_id],
+                        full_res_coords[batch_id],
+                        [self.preds[file_names[batch_id]]["pred_masks"]],
+                        [self.preds[file_names[batch_id]]["pred_classes"]],
+                        file_names[batch_id],
+                        original_colors[batch_id],
+                        original_normals[batch_id],
+                        [self.preds[file_names[batch_id]]["pred_scores"]],
+                        sorted_heatmaps=[all_heatmaps[batch_id]],
+                        query_pos=all_query_pos[batch_id]
                         if len(all_query_pos) > 0
                         else None,
                         backbone_features=backbone_features,
@@ -935,25 +918,25 @@ class InstanceSegmentation(pl.LightningModule):
 
             if self.config.general.export:
                 if self.validation_dataset.dataset_name == "stpls3d":
-                    scan_id, _, _, crop_id = file_names[bid].split("_")
+                    scan_id, _, _, crop_id = file_names[batch_id].split("_")
                     crop_id = int(crop_id.replace(".txt", ""))
                     file_name = (
                         f"{scan_id}_points_GTv3_0{crop_id}_inst_nostuff"
                     )
 
                     self.export(
-                        self.preds[file_names[bid]]["pred_masks"],
-                        self.preds[file_names[bid]]["pred_scores"],
-                        self.preds[file_names[bid]]["pred_classes"],
+                        self.preds[file_names[batch_id]]["pred_masks"],
+                        self.preds[file_names[batch_id]]["pred_scores"],
+                        self.preds[file_names[batch_id]]["pred_classes"],
                         file_name,
                         self.decoder_id,
                     )
                 else:
                     self.export(
-                        self.preds[file_names[bid]]["pred_masks"],
-                        self.preds[file_names[bid]]["pred_scores"],
-                        self.preds[file_names[bid]]["pred_classes"],
-                        file_names[bid],
+                        self.preds[file_names[batch_id]]["pred_masks"],
+                        self.preds[file_names[batch_id]]["pred_scores"],
+                        self.preds[file_names[batch_id]]["pred_classes"],
+                        file_names[batch_id],
                         self.decoder_id,
                     )
 
@@ -963,7 +946,6 @@ class InstanceSegmentation(pl.LightningModule):
 
         head_results, tail_results, common_results = [], [], []
 
-        breakpoint()
         box_ap_50 = eval_det(
             self.bbox_preds, self.bbox_gt, ovthresh=0.5, use_07_metric=False
         )
@@ -1082,7 +1064,7 @@ class InstanceSegmentation(pl.LightningModule):
                                     )
                                 )
                             else:
-                                assert (False, "class not known!")
+                                assert False, "class not known!"
                     else:
                         ap_results[
                             f"{log_prefix}_{class_name}_val_ap"
