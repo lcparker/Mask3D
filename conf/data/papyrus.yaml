@@ -13,8 +13,8 @@ ignore_label: 255
 add_distance: true # 1dim
 add_reflection: true # 1dim
 add_normals: false
-add_raw_coordinates: false
-in_channels: 1 # in_channels = add_distance + add_reflection
+add_raw_coordinates: true
+in_channels: 1 # density
 num_labels: 19
 add_instance: false
 num_workers: 0

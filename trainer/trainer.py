@@ -463,7 +463,7 @@ class InstanceSegmentation(pl.LightningModule):
             raw_coordinates = data.features[:, -3:]
             data.features = data.features[:, :-3]
 
-        if raw_coordinates and raw_coordinates.shape[0] == 0:
+        if raw_coordinates is not None and raw_coordinates.shape[0] == 0:
             return 0.0
 
         data = ME.SparseTensor(

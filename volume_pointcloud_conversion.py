@@ -83,7 +83,7 @@ def dense_volume_with_labels_to_points(volume_HWD: np.ndarray,
     
     # Convert to torch tensors
     return (torch.from_numpy(coords).float(), 
-            torch.from_numpy(features).float(),
+            torch.from_numpy(np.hstack([features, coords])).float(),
             torch.from_numpy(point_labels).long())
 
 # Example usage:
