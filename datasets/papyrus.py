@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import List, Tuple
 import torch
+from torch.nn import functional as F
 
 import numpy as np
 import MinkowskiEngine as ME
@@ -64,7 +65,7 @@ class PapyrusDataset(torch.utils.data.Dataset):
 class SyntheticPapyrusDataset(torch.utils.data.Dataset):
     def __init__(self, reference_volume_filename, reference_label_filename, 
                  mode="train", spatial_transform=True, layer_dropout=False, 
-                 layer_shuffle=True):
+                 layer_shuffle=True, label_offset=0):
         super().__init__()
         self.synthetic_gen = SyntheticInstanceCubesDataset(
             reference_volume_filename=reference_volume_filename,
@@ -73,13 +74,35 @@ class SyntheticPapyrusDataset(torch.utils.data.Dataset):
             layer_dropout=layer_dropout,
             layer_shuffle=layer_shuffle
         )
+        self.label_offset = label_offset
         self.label_info = None
+        self.label_info = [
+            {
+                "name": "Papyrus",
+            },
+            {
+                "name": "DoesNotExist",
+            },
+        ]
         
     def __len__(self):
         return 500  # Same as synthetic dataset
         
     def __getitem__(self, idx):
         batch = self.synthetic_gen._gather_batch()
+        new_size = (96,96,96)
+        batch['vol'] = F.interpolate(
+            batch['vol'][None, None].float(), 
+            size=new_size, 
+            mode='trilinear', 
+            align_corners=True
+        )[0][0]
+        batch['lbl'] = F.interpolate(
+            batch['lbl'][None].float(), 
+            size=new_size, 
+            mode='trilinear', 
+            align_corners=True
+        )[0].long()
         coords, features, point_labels = dense_volume_with_labels_to_points(
             batch['vol'], batch['lbl'], min_density=0.1
         )
@@ -102,5 +125,5 @@ class SyntheticPapyrusDataset(torch.utils.data.Dataset):
                 f"data_{idx}", 
                 None, 
                 None, 
-                None, 
+                coords.numpy().copy(), 
                 None)

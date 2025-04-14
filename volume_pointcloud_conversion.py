@@ -38,7 +38,7 @@ def dense_volume_to_points(nrrd_obj: Nrrd, min_density=0.1, subsample_factor=4):
     return (torch.from_numpy(coords).float(), 
             torch.from_numpy(features).float())
 
-def dense_volume_with_labels_to_points(volume_HWD: np.ndarray, 
+def dense_volume_with_labels_to_points(volume_HWD: torch.Tensor, 
                                        labels_NHWD: torch.Tensor, 
                                        min_density=0.1, 
                                        subsample_factor=4):
@@ -46,7 +46,7 @@ def dense_volume_with_labels_to_points(volume_HWD: np.ndarray,
     Convert Nrrd volume and one-hot encoded label map to point cloud format with instance labels.
     
     Args:
-        volume: np.ndarray - 3D array containing volume data
+        volume: torch.Tensor - 3D array containing volume data
         labelmap: torch.Tensor - one-hot encoded label map of shape (N, 256, 256, 256), where N is the number of labels
         min_density: float - threshold for considering a voxel as papyrus
         subsample_factor: int - factor to subsample points by to control memory usage
@@ -63,13 +63,13 @@ def dense_volume_with_labels_to_points(volume_HWD: np.ndarray,
         raise ValueError("Volume shape and labelmap spatial dimensions do not match")
     
     # Convert one-hot labelmap to label indices
-    labelmap_HWD = np.argmax(labels_NHWD.numpy(), axis=0) # HACK the right way to do this is to pass both as tensors
+    labelmap_HWD = torch.argmax(labels_NHWD, dim=0) # HACK the right way to do this is to pass both as tensors
     
     # Get coordinates of non-air voxels that have labels
-    occupied = np.where((volume_HWD > min_density) & (labelmap_HWD > 0))  # Exclude 'air' label (0)
+    occupied = torch.where((volume_HWD > min_density) & (labelmap_HWD > 0))  # Exclude 'air' label (0)
     
     # Stack coordinates
-    coords = np.stack(occupied, axis=1)  # Shape: (M, 3), where M is the number of occupied voxels
+    coords = torch.stack(occupied, axis=1)  # Shape: (M, 3), where M is the number of occupied voxels
     features = volume_HWD[occupied][:, None]  # Shape: (M, 1), density values
     point_labels = labelmap_HWD[occupied]  # Shape: (M,), instance labels
     
@@ -82,9 +82,9 @@ def dense_volume_with_labels_to_points(volume_HWD: np.ndarray,
         point_labels = point_labels[idx]
     
     # Convert to torch tensors
-    return (torch.from_numpy(coords).float(), 
-            torch.from_numpy(np.hstack([features, coords])).float(),
-            torch.from_numpy(point_labels).long())
+    return (coords.float(), 
+            torch.hstack([features, coords]).float(),
+            point_labels.long())
 
 # Example usage:
 def process_nrrd_pair(volume_nrrd: Nrrd, label_nrrd: Nrrd):
