@@ -516,6 +516,14 @@ class InstanceSegmentation(pl.LightningModule):
             if self.config.trainer.deterministic:
                 torch.use_deterministic_algorithms(True)
 
+        # save
+        # target, filename
+        # output mask, filename
+        torch.save(data.coordinates, f"coordinates_{file_names[0]}.pt")
+        torch.save(raw_coordinates, f"raw_coordinates_{file_names[0]}.pt")
+        torch.save(target, f"target_{file_names[0]}.pt")
+        torch.save(output['pred_masks'], f"output_mask_logits_{file_names[0]}.pt")
+
         if self.config.general.save_visualizations:
             backbone_features = (
                 output["backbone_features"].F.detach().cpu().numpy()
@@ -633,7 +641,7 @@ class InstanceSegmentation(pl.LightningModule):
             }
         )
 
-        prediction[self.decoder_id][ "pred_logits" ] = torch.functional.F.softmax( prediction[self.decoder_id]["pred_logits"], dim=-1)[ ..., :-1 ]
+        prediction[self.decoder_id][ "pred_logits" ] = torch.functional.F.softmax(prediction[self.decoder_id]["pred_logits"], dim=-1)[ ..., :-1 ]
 
         all_pred_classes = list()
         all_pred_masks = list()
@@ -654,40 +662,41 @@ class InstanceSegmentation(pl.LightningModule):
                     masks = ( prediction[self.decoder_id]["pred_masks"][batch_id] .detach() .cpu())
 
                 if self.config.general.use_dbscan:
-                    new_preds = {
-                        "pred_masks": list(),
-                        "pred_logits": list(),
-                    }
+                    continue
+                    # new_preds = {
+                    #     "pred_masks": list(),
+                    #     "pred_logits": list(),
+                    # }
 
-                    curr_coords_idx = masks.shape[0]
-                    curr_coords = raw_coords[ offset_coords_idx : curr_coords_idx + offset_coords_idx ]
-                    offset_coords_idx += curr_coords_idx
+                    # curr_coords_idx = masks.shape[0]
+                    # curr_coords = raw_coords[ offset_coords_idx : curr_coords_idx + offset_coords_idx ]
+                    # offset_coords_idx += curr_coords_idx
 
-                    for curr_query in range(masks.shape[1]):
-                        curr_masks = masks[:, curr_query] > 0
+                    # for curr_query in range(masks.shape[1]):
+                    #     curr_masks = masks[:, curr_query] > 0
 
-                        if curr_coords[curr_masks].shape[0] > 0:
-                            clusters = (
-                                DBSCAN( eps=self.config.general.dbscan_eps, min_samples=self.config.general.dbscan_min_points, n_jobs=-1,)
-                                .fit(curr_coords[curr_masks])
-                                .labels_
-                            )
+                    #     if curr_coords[curr_masks].shape[0] > 0:
+                    #         clusters = (
+                    #             DBSCAN( eps=self.config.general.dbscan_eps, min_samples=self.config.general.dbscan_min_points, n_jobs=-1,)
+                    #             .fit(curr_coords[curr_masks])
+                    #             .labels_
+                    #         )
 
-                            new_mask = torch.zeros(curr_masks.shape, dtype=int)
-                            new_mask[curr_masks] = ( torch.from_numpy(clusters) + 1)
+                    #         new_mask = torch.zeros(curr_masks.shape, dtype=int)
+                    #         new_mask[curr_masks] = ( torch.from_numpy(clusters) + 1)
 
-                            for cluster_id in np.unique(clusters):
-                                original_pred_masks = masks[:, curr_query]
-                                if cluster_id != -1:
-                                    new_preds["pred_masks"].append( original_pred_masks * (new_mask == cluster_id + 1))
-                                    new_preds["pred_logits"].append( prediction[self.decoder_id][ "pred_logits" ][batch_id, curr_query])
+                    #         for cluster_id in np.unique(clusters):
+                    #             original_pred_masks = masks[:, curr_query]
+                    #             if cluster_id != -1:
+                    #                 new_preds["pred_masks"].append( original_pred_masks * (new_mask == cluster_id + 1))
+                    #                 new_preds["pred_logits"].append( prediction[self.decoder_id][ "pred_logits" ][batch_id, curr_query])
 
-                    scores, masks, classes, heatmap = self.get_mask_and_scores(
-                        torch.stack(new_preds["pred_logits"]).cpu(),
-                        torch.stack(new_preds["pred_masks"]).T,
-                        len(new_preds["pred_logits"]),
-                        self.model.num_classes - 1,
-                    )
+                    # scores, masks, classes, heatmap = self.get_mask_and_scores(
+                    #     torch.stack(new_preds["pred_logits"]).cpu(),
+                    #     torch.stack(new_preds["pred_masks"]).T,
+                    #     len(new_preds["pred_logits"]),
+                    #     self.model.num_classes - 1,
+                    # )
                 else:
                     scores, masks, classes, heatmap = self.get_mask_and_scores(
                         prediction[self.decoder_id]["pred_logits"][batch_id] .detach() .cpu(),
@@ -768,29 +777,24 @@ class InstanceSegmentation(pl.LightningModule):
                 all_pred_scores.append(sort_scores_values)
                 all_heatmaps.append(sorted_heatmap)
 
-        if self.validation_dataset.dataset_name == "scannet200":
-            all_pred_classes[batch_id][all_pred_classes[batch_id] == 0] = -1
-            if self.config.data.test_mode != "test":
-                target_full_res[batch_id]["labels"][
-                    target_full_res[batch_id]["labels"] == 0
-                ] = -1
-
-        for batch_id in range(len(prediction[self.decoder_id]["pred_masks"])):
-            all_pred_classes[
-                batch_id
-            ] = self.validation_dataset._remap_model_output(
-                all_pred_classes[batch_id].cpu() + label_offset
-            )
+            # all_pred_classes[
+            #     batch_id
+            # ] = self.validation_dataset._remap_model_output(
+            #     all_pred_classes[batch_id].cpu() + label_offset
+            # )
 
             if (
                 self.config.data.test_mode != "test"
                 and len(target_full_res) != 0
+
             ):
-                target_full_res[batch_id][
-                    "labels"
-                ] = self.validation_dataset._remap_model_output(
-                    target_full_res[batch_id]["labels"].cpu() + label_offset
-                )
+                # Not sure what this does: if label_offset is 0, shouldn't do anything!
+                # See semseg.py for what they were going for. seem to just be applying the label offset
+                # target_full_res[batch_id][
+                #     "labels"
+                # ] = self.validation_dataset._remap_model_output(
+                #     target_full_res[batch_id]["labels"].cpu() + label_offset
+                # )
 
                 # PREDICTION BOX
                 bbox_data = []
@@ -917,28 +921,13 @@ class InstanceSegmentation(pl.LightningModule):
                     )
 
             if self.config.general.export:
-                if self.validation_dataset.dataset_name == "stpls3d":
-                    scan_id, _, _, crop_id = file_names[batch_id].split("_")
-                    crop_id = int(crop_id.replace(".txt", ""))
-                    file_name = (
-                        f"{scan_id}_points_GTv3_0{crop_id}_inst_nostuff"
-                    )
-
-                    self.export(
-                        self.preds[file_names[batch_id]]["pred_masks"],
-                        self.preds[file_names[batch_id]]["pred_scores"],
-                        self.preds[file_names[batch_id]]["pred_classes"],
-                        file_name,
-                        self.decoder_id,
-                    )
-                else:
-                    self.export(
-                        self.preds[file_names[batch_id]]["pred_masks"],
-                        self.preds[file_names[batch_id]]["pred_scores"],
-                        self.preds[file_names[batch_id]]["pred_classes"],
-                        file_names[batch_id],
-                        self.decoder_id,
-                    )
+                self.export(
+                    self.preds[file_names[batch_id]]["pred_masks"],
+                    self.preds[file_names[batch_id]]["pred_scores"],
+                    self.preds[file_names[batch_id]]["pred_classes"],
+                    file_names[batch_id],
+                    self.decoder_id,
+                )
 
     def eval_instance_epoch_end(self):
         log_prefix = f"val"
@@ -977,15 +966,6 @@ class InstanceSegmentation(pl.LightningModule):
         root_path = f"eval_output"
         base_path = f"{root_path}/instance_evaluation_{self.config.general.experiment_name}_{self.current_epoch}"
 
-        if self.validation_dataset.dataset_name in [
-            "scannet",
-            "stpls3d",
-            "scannet200",
-        ]:
-            gt_data_path = f"{self.validation_dataset.data_dir[0]}/instance_gt/{self.validation_dataset.mode}"
-        else:
-            gt_data_path = f"{self.validation_dataset.data_dir[0]}/instance_gt/Area_{self.config.general.area}"
-
         pred_path = f"{base_path}/tmp_output.txt"
 
         log_prefix = f"val"
@@ -994,38 +974,6 @@ class InstanceSegmentation(pl.LightningModule):
             os.makedirs(base_path)
 
         try:
-            if self.validation_dataset.dataset_name == "s3dis":
-                new_preds = {}
-                for key in self.preds.keys():
-                    new_preds[
-                        key.replace(f"Area_{self.config.general.area}_", "")
-                    ] = {
-                        "pred_classes": self.preds[key]["pred_classes"] + 1,
-                        "pred_masks": self.preds[key]["pred_masks"],
-                        "pred_scores": self.preds[key]["pred_scores"],
-                    }
-                mprec, mrec = evaluate(
-                    new_preds, gt_data_path, pred_path, dataset="s3dis"
-                )
-                ap_results[f"{log_prefix}_mean_precision"] = mprec
-                ap_results[f"{log_prefix}_mean_recall"] = mrec
-            elif self.validation_dataset.dataset_name == "stpls3d":
-                new_preds = {}
-                for key in self.preds.keys():
-                    new_preds[key.replace(".txt", "")] = {
-                        "pred_classes": self.preds[key]["pred_classes"],
-                        "pred_masks": self.preds[key]["pred_masks"],
-                        "pred_scores": self.preds[key]["pred_scores"],
-                    }
-
-                evaluate(new_preds, gt_data_path, pred_path, dataset="stpls3d")
-            else:
-                evaluate(
-                    self.preds,
-                    gt_data_path,
-                    pred_path,
-                    dataset=self.validation_dataset.dataset_name,
-                )
             with open(pred_path, "r") as fin:
                 for line_id, line in enumerate(fin):
                     if line_id == 0:
@@ -1033,132 +981,40 @@ class InstanceSegmentation(pl.LightningModule):
                         continue
                     class_name, _, ap, ap_50, ap_25 = line.strip().split(",")
 
-                    if self.validation_dataset.dataset_name == "scannet200":
-                        if class_name in VALID_CLASS_IDS_200_VALIDATION:
-                            ap_results[
-                                f"{log_prefix}_{class_name}_val_ap"
-                            ] = float(ap)
-                            ap_results[
-                                f"{log_prefix}_{class_name}_val_ap_50"
-                            ] = float(ap_50)
-                            ap_results[
-                                f"{log_prefix}_{class_name}_val_ap_25"
-                            ] = float(ap_25)
+                    ap_results[ f"{log_prefix}_{class_name}_val_ap" ] = float(ap)
+                    ap_results[ f"{log_prefix}_{class_name}_val_ap_50" ] = float(ap_50)
+                    ap_results[ f"{log_prefix}_{class_name}_val_ap_25" ] = float(ap_25)
 
-                            if class_name in HEAD_CATS_SCANNET_200:
-                                head_results.append(
-                                    np.array(
-                                        (float(ap), float(ap_50), float(ap_25))
-                                    )
-                                )
-                            elif class_name in COMMON_CATS_SCANNET_200:
-                                common_results.append(
-                                    np.array(
-                                        (float(ap), float(ap_50), float(ap_25))
-                                    )
-                                )
-                            elif class_name in TAIL_CATS_SCANNET_200:
-                                tail_results.append(
-                                    np.array(
-                                        (float(ap), float(ap_50), float(ap_25))
-                                    )
-                                )
-                            else:
-                                assert False, "class not known!"
-                    else:
-                        ap_results[
-                            f"{log_prefix}_{class_name}_val_ap"
-                        ] = float(ap)
-                        ap_results[
-                            f"{log_prefix}_{class_name}_val_ap_50"
-                        ] = float(ap_50)
-                        ap_results[
-                            f"{log_prefix}_{class_name}_val_ap_25"
-                        ] = float(ap_25)
+            mean_ap = statistics.mean(
+                [
+                    item
+                    for key, item in ap_results.items()
+                    if key.endswith("val_ap")
+                ]
+            )
+            mean_ap_50 = statistics.mean(
+                [
+                    item
+                    for key, item in ap_results.items()
+                    if key.endswith("val_ap_50")
+                ]
+            )
+            mean_ap_25 = statistics.mean(
+                [
+                    item
+                    for key, item in ap_results.items()
+                    if key.endswith("val_ap_25")
+                ]
+            )
 
-            if self.validation_dataset.dataset_name == "scannet200":
-                head_results = np.stack(head_results)
-                common_results = np.stack(common_results)
-                tail_results = np.stack(tail_results)
+            ap_results[f"{log_prefix}_mean_ap"] = mean_ap
+            ap_results[f"{log_prefix}_mean_ap_50"] = mean_ap_50
+            ap_results[f"{log_prefix}_mean_ap_25"] = mean_ap_25
 
-                mean_tail_results = np.nanmean(tail_results, axis=0)
-                mean_common_results = np.nanmean(common_results, axis=0)
-                mean_head_results = np.nanmean(head_results, axis=0)
-
-                ap_results[
-                    f"{log_prefix}_mean_tail_ap_25"
-                ] = mean_tail_results[0]
-                ap_results[
-                    f"{log_prefix}_mean_common_ap_25"
-                ] = mean_common_results[0]
-                ap_results[
-                    f"{log_prefix}_mean_head_ap_25"
-                ] = mean_head_results[0]
-
-                ap_results[
-                    f"{log_prefix}_mean_tail_ap_50"
-                ] = mean_tail_results[1]
-                ap_results[
-                    f"{log_prefix}_mean_common_ap_50"
-                ] = mean_common_results[1]
-                ap_results[
-                    f"{log_prefix}_mean_head_ap_50"
-                ] = mean_head_results[1]
-
-                ap_results[
-                    f"{log_prefix}_mean_tail_ap_25"
-                ] = mean_tail_results[2]
-                ap_results[
-                    f"{log_prefix}_mean_common_ap_25"
-                ] = mean_common_results[2]
-                ap_results[
-                    f"{log_prefix}_mean_head_ap_25"
-                ] = mean_head_results[2]
-
-                overall_ap_results = np.nanmean(
-                    np.vstack((head_results, common_results, tail_results)),
-                    axis=0,
-                )
-
-                ap_results[f"{log_prefix}_mean_ap"] = overall_ap_results[0]
-                ap_results[f"{log_prefix}_mean_ap_50"] = overall_ap_results[1]
-                ap_results[f"{log_prefix}_mean_ap_25"] = overall_ap_results[2]
-
-                ap_results = {
-                    key: 0.0 if math.isnan(score) else score
-                    for key, score in ap_results.items()
-                }
-            else:
-                mean_ap = statistics.mean(
-                    [
-                        item
-                        for key, item in ap_results.items()
-                        if key.endswith("val_ap")
-                    ]
-                )
-                mean_ap_50 = statistics.mean(
-                    [
-                        item
-                        for key, item in ap_results.items()
-                        if key.endswith("val_ap_50")
-                    ]
-                )
-                mean_ap_25 = statistics.mean(
-                    [
-                        item
-                        for key, item in ap_results.items()
-                        if key.endswith("val_ap_25")
-                    ]
-                )
-
-                ap_results[f"{log_prefix}_mean_ap"] = mean_ap
-                ap_results[f"{log_prefix}_mean_ap_50"] = mean_ap_50
-                ap_results[f"{log_prefix}_mean_ap_25"] = mean_ap_25
-
-                ap_results = {
-                    key: 0.0 if math.isnan(score) else score
-                    for key, score in ap_results.items()
-                }
+            ap_results = {
+                key: 0.0 if math.isnan(score) else score
+                for key, score in ap_results.items()
+            }
         except (IndexError, OSError) as e:
             print("NO SCORES!!!")
             ap_results[f"{log_prefix}_mean_ap"] = 0.0
