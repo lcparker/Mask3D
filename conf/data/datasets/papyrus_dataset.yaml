@@ -6,6 +6,7 @@ train_dataset:
   spatial_transform: True
   layer_dropout: True 
   layer_shuffle: True
+  label_offset: 0
   mode: "{data.train_mode}"
 
 validation_dataset:
@@ -15,6 +16,7 @@ validation_dataset:
   spatial_transform: False
   layer_dropout: False
   layer_shuffle: False
+  label_offset: 0
   mode: "${data.validation_mode}"
 
 test_dataset:
@@ -24,4 +26,5 @@ test_dataset:
   spatial_transform: False
   layer_dropout: False
   layer_shuffle: False
+  label_offset: 0
   mode: "${data.test_mode}"
