@@ -5,9 +5,11 @@ from torch.nn import functional as F
 
 import numpy as np
 import MinkowskiEngine as ME
+from torch.utils.data import IterableDataset
 from synthetic_pages.nrrd_file import Nrrd
 from volume_pointcloud_conversion import dense_volume_with_labels_to_points
 from scrolls_instance_segmentation.data.synthetic_datamodule_cubes import SyntheticInstanceCubesDataset
+from scrolls_instance_segmentation.data.real_scroll_datamodule_cubes import InstanceCubesDataset
 
 
 class PapyrusVolume:
@@ -62,18 +64,23 @@ class PapyrusDataset(torch.utils.data.Dataset):
             str(idx)  # Filename/identifier
         )
         
-class SyntheticPapyrusDataset(torch.utils.data.Dataset):
-    def __init__(self, reference_volume_filename, reference_label_filename, 
-                 mode="train", spatial_transform=True, layer_dropout=False, 
-                 layer_shuffle=True, label_offset=0):
+
+synthetic_cubes = SyntheticInstanceCubesDataset(
+  reference_volume_filename= "reference_volume.nrrd",
+  reference_label_filename= "reference_labels.nrrd",
+  spatial_transform= True,
+  layer_dropout= True,
+  layer_shuffle= True
+)
+
+real_cubes = InstanceCubesDataset(
+    Path("/workspace/code/cubes/")
+    )
+
+class SyntheticPapyrusDataset(IterableDataset):
+    def __init__(self, mode="train", label_offset=0):
         super().__init__()
-        self.synthetic_gen = SyntheticInstanceCubesDataset(
-            reference_volume_filename=reference_volume_filename,
-            reference_label_filename=reference_label_filename,
-            spatial_transform=spatial_transform,
-            layer_dropout=layer_dropout,
-            layer_shuffle=layer_shuffle
-        )
+        self.cube_dataset = InstanceCubesDataset(Path("/workspace/code/cubes/") / ("training" if mode == "train" else "validation"))
         self.label_offset = label_offset
         self.label_info = None
         self.label_info = [
@@ -88,42 +95,44 @@ class SyntheticPapyrusDataset(torch.utils.data.Dataset):
     def __len__(self):
         return 500  # Same as synthetic dataset
         
-    def __getitem__(self, idx):
-        batch = self.synthetic_gen._gather_batch()
-        new_size = (96,96,96)
-        batch['vol'] = F.interpolate(
-            batch['vol'][None, None].float(), 
-            size=new_size, 
-            mode='trilinear', 
-            align_corners=True
-        )[0][0]
-        batch['lbl'] = F.interpolate(
-            batch['lbl'][None].float(), 
-            size=new_size, 
-            mode='trilinear', 
-            align_corners=True
-        )[0].long()
-        coords, features, point_labels = dense_volume_with_labels_to_points(
-            batch['vol'], batch['lbl'], min_density=0.1
-        )
-        
-        # Get instance IDs once, excluding background (0)
-        instance_ids = torch.unique(point_labels)[1:]
-        num_points = len(point_labels)
-        
-        # Create the (M, 3) tensor
-        
-        segmentation_instance_tensor = torch.zeros((num_points, 3), dtype=torch.long)
-        segmentation_instance_tensor[:, 0] = 1  # Segment mask
-        segmentation_instance_tensor[:, 1] = point_labels  # Instance masks
-        segmentation_instance_tensor[:, 2] = 1  # Segment masks
+    def __iter__(self):
+        idx=0
+        for batch in self.cube_dataset:
+            new_size = (96,96,96)
+            batch['vol'] = F.interpolate(
+                batch['vol'][None, None].float(), 
+                size=new_size, 
+                mode='trilinear', 
+                align_corners=True
+            )[0][0]
+            batch['lbl'] = F.interpolate(
+                batch['lbl'][None].float(), 
+                size=new_size, 
+                mode='trilinear', 
+                align_corners=True
+            )[0].long()
+            coords, features, point_labels = dense_volume_with_labels_to_points(
+                batch['vol'], batch['lbl'], min_density=0.1
+            )
+            
+            # Get instance IDs once, excluding background (0)
+            instance_ids = torch.unique(point_labels)[1:]
+            num_points = len(point_labels)
+            
+            # Create the (M, 3) tensor
+            
+            segmentation_instance_tensor = torch.zeros((num_points, 3), dtype=torch.long)
+            segmentation_instance_tensor[:, 0] = 1  # Segment mask
+            segmentation_instance_tensor[:, 1] = point_labels  # Instance masks
+            segmentation_instance_tensor[:, 2] = 1  # Segment masks
 
-        # Return the updated output
-        return (coords.numpy(), 
-                features.numpy(), 
-                segmentation_instance_tensor.numpy(), 
-                f"data_{idx}", 
-                None, 
-                None, 
-                coords.numpy().copy(), 
-                None)
+            # Return the updated output
+            yield (coords.numpy(), 
+                    features.numpy(), 
+                    segmentation_instance_tensor.numpy(), 
+                    f"data_{idx}", 
+                    None, 
+                    None, 
+                    coords.numpy().copy(), 
+                    None)
+            idx += 1

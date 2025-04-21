@@ -1,0 +1,2 @@
+_target_: datasets.papyrus.InstanceCubesDataset
+dataset_path: "/workspace/code/cubes"

@@ -1,0 +1,7 @@
+synthetic_cubes:
+  _target_: datasets.papyrus.SyntheticInstanceCubesDataset
+  reference_volume_filename: ${data.reference_volume}
+  reference_label_filename: ${data.reference_labels}
+  spatial_transform: True
+  layer_dropout: True
+  layer_shuffle: True
