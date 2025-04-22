@@ -38,7 +38,7 @@ def dense_volume_to_points(nrrd_obj: Nrrd, min_density=0.1, subsample_factor=4):
     return (torch.from_numpy(coords).float(), 
             torch.from_numpy(features).float())
 
-def pointcloud_to_volume(coordinates_0HWD, x_M):
+def pointcloud_to_volume(coordinates_0HWD: torch.Tensor, x_M: torch.Tensor):
     dimensions = (
         coordinates_0HWD[:, 0].max().long() - coordinates_0HWD[:, 0].min().long() + 1, 
         coordinates_0HWD[:, 1].max().long() - coordinates_0HWD[:, 1].min().long() + 1, 
