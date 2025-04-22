@@ -71,5 +71,4 @@ hydra:
     dir: saved/hydra_logs/${now:%Y-%m-%d}/${now:%H-%M-%S}
   sweep:
     dir: saved/hydra_logs/${now:%Y-%m-%d}/${now:%H-%M-%S}
-    # dir: ${general.save_dir}
     subdir: ${hydra.job.num}_${hydra.job.id}
