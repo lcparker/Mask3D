@@ -93,7 +93,7 @@ class SyntheticPapyrusDataset(IterableDataset):
         ]
         
     def __len__(self):
-        return 500  # Same as synthetic dataset
+        return len(self.cube_dataset)
         
     def __iter__(self):
         idx=0
