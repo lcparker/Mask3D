@@ -80,6 +80,8 @@ real_cubes = InstanceCubesDataset(
 class SyntheticPapyrusDataset(IterableDataset):
     def __init__(self, mode="train", label_offset=0):
         super().__init__()
+        if not mode in ["train", "validation"]:
+            raise ValueError("mode must be either 'train' or 'val'")
         self.cube_dataset = InstanceCubesDataset(Path("/workspace/code/cubes/") / ("training" if mode == "train" else "validation"))
         self.label_offset = label_offset
         self.label_info = None
