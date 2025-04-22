@@ -5,6 +5,7 @@ import statistics
 import shutil
 import os
 import math
+from eval.instance_logger import WandbInstanceImageLogger
 import pyviz3d.visualizer as vis
 from torch_scatter import scatter_mean
 import matplotlib
@@ -24,11 +25,14 @@ import MinkowskiEngine as ME
 import numpy as np
 import pytorch_lightning as pl
 import torch
+import torch.nn.functional as F
 from models.metrics import IoU
 import random
 import colorsys
 from typing import List, Tuple
 import functools
+
+from volume_pointcloud_conversion import pointcloud_to_volume
 
 
 @functools.lru_cache(20)
@@ -112,6 +116,7 @@ class InstanceSegmentation(pl.LightningModule):
         self.iou = IoU()
         # misc
         self.labels_info = dict()
+        self.instance_logger = WandbInstanceImageLogger(num_instances=config.model.num_queries)
 
     def forward(
         self, x, point2segment=None, raw_coordinates=None, is_eval=False
@@ -516,13 +521,18 @@ class InstanceSegmentation(pl.LightningModule):
             if self.config.trainer.deterministic:
                 torch.use_deterministic_algorithms(True)
 
-        # save
-        # target, filename
-        # output mask, filename
-        torch.save(data.coordinates, f"coordinates_{file_names[0]}.pt")
-        torch.save(raw_coordinates, f"raw_coordinates_{file_names[0]}.pt")
-        torch.save(target, f"target_{file_names[0]}.pt")
-        torch.save(output['pred_masks'], f"output_mask_logits_{file_names[0]}.pt")
+        # Save inputs and outputs on validation epoch
+        torch.save(data.coordinates, f"coordinates_{file_names[0]}_epoch={self.current_epoch}_idx={batch_idx}.pt")
+        torch.save(data.features, f"features_{file_names[0]}_epoch={self.current_epoch}_idx={batch_idx}.pt")
+        torch.save(raw_coordinates, f"raw_coordinates_{file_names[0]}_epoch={self.current_epoch}_idx={batch_idx}.pt")
+        torch.save(target, f"target_{file_names[0]}_epoch={self.current_epoch}_idx={batch_idx}.pt")
+        torch.save(output['pred_masks'], f"output_mask_logits_{file_names[0]}_epoch={self.current_epoch}_idx={batch_idx}.pt")
+
+        input_features_volume = pointcloud_to_volume(raw_coordinates, data.features)
+        predicted_instances_volume = pointcloud_to_volume(raw_coordinates, F.sigmoid(output['pred_masks'])).argmax(dim=-1)
+        ground_truth_instances_volume = pointcloud_to_volume(raw_coordinates, target[0]['masks']).argmax(dim=-1)
+        self.instance_logger.log(input_features_volume, predicted_instances_volume, ground_truth_instances_volume, self.global_step, n_slices=8, batch_index=0)
+
 
         if self.config.general.save_visualizations:
             backbone_features = (
