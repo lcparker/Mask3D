@@ -17,7 +17,7 @@ general:
   ignore_class_threshold: 100
   project_name: mask3d
   workspace: mask3d
-  experiment_name: DEBUG_ABLATION
+  experiment_name: no-pretraining
   num_targets: 2
   add_instance: true
   dbscan_eps: 0.95
