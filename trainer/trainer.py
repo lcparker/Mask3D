@@ -530,9 +530,10 @@ class InstanceSegmentation(pl.LightningModule):
         torch.save(output['pred_masks'],save_dir/ f"output_mask_logits_{file_names[0]}_epoch={self.current_epoch}_idx={batch_idx}.pt")
 
         cpu_coordinates = raw_coordinates.cpu()
-        input_features_volume = pointcloud_to_volume(cpu_coordinates, data.features[..., 0].cpu())[None, None,...]
-        predicted_instances_volume = pointcloud_to_volume(cpu_coordinates, F.sigmoid(output['pred_masks'][0].cpu()).argmax(dim=-1))[None, None, ...]
-        ground_truth_instances_volume = pointcloud_to_volume(cpu_coordinates, target[0]['masks'].cpu().int().argmax(dim=0))[None, None, ...]
+        shape = (96,96,96)
+        input_features_volume = pointcloud_to_volume(cpu_coordinates, data.features[..., 0].cpu(), dimensions_HWD=shape)[None, None,...]
+        predicted_instances_volume = pointcloud_to_volume(cpu_coordinates, F.sigmoid(output['pred_masks'][0].cpu()).argmax(dim=-1),dimensions_HWD=shape )[None, None, ...]
+        ground_truth_instances_volume = pointcloud_to_volume(cpu_coordinates, target[0]['masks'].cpu().int().argmax(dim=0), dimensions_HWD=shape)[None, None, ...]
         self.instance_logger.log(input_features_volume, predicted_instances_volume, ground_truth_instances_volume, self.global_step, n_slices=8, batch_index=0)
 
 
