@@ -25,8 +25,8 @@ class SyntheticPapyrusDataset(IterableDataset):
         if not mode in ["train", "validation"]:
             raise ValueError("mode must be either 'train' or 'val'")
 
-        self.cube_dataset = InstanceCubesDataset(Path("/workspace/code/cubes/") / ("training" if mode == "train" else "validation"))
-        # self.cube_dataset = synthetic_cubes
+        # self.cube_dataset = InstanceCubesDataset(Path("/workspace/code/cubes/") / ("training" if mode == "train" else "validation"))
+        self.cube_dataset = synthetic_cubes
 
         self.label_offset = label_offset
         self.label_info = None
