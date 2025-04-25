@@ -515,9 +515,9 @@ class InstanceSegmentation(pl.LightningModule):
 
         shape = (96, 96, 96)  # Define the desired shape for the volumes
 
-        features_volume = pointcloud_to_volume( data.coordinates.cpu(), data.features[..., 0].cpu(), dimensions_HWD=shape)
-        target_volume = pointcloud_to_volume( data.coordinates.cpu(), target[0]['masks'].cpu().int().argmax(dim=0), dimensions_HWD=shape)
-        output_volume = pointcloud_to_volume( data.coordinates.cpu(), F.sigmoid(output['pred_masks'][0].cpu()).argmax(dim=-1), dimensions_HWD=shape)
+        features_volume = pointcloud_to_volume( raw_coordinates.cpu(), data.features[..., 0].cpu(), dimensions_HWD=shape)
+        target_volume = pointcloud_to_volume( raw_coordinates.cpu(), target[0]['masks'].cpu().int().argmax(dim=0), dimensions_HWD=shape)
+        output_volume = pointcloud_to_volume( raw_coordinates.cpu(), F.sigmoid(output['pred_masks'][0].cpu()).argmax(dim=-1), dimensions_HWD=shape)
 
         if batch_idx == 0:
             save_dir = Path(self.config.general.save_dir)
