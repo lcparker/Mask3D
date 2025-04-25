@@ -38,9 +38,15 @@ def dense_volume_to_points(nrrd_obj: Nrrd, min_density=0.1, subsample_factor=4):
     return (torch.from_numpy(coords).float(), 
             torch.from_numpy(features).float())
 
-def pointcloud_to_volume(coordinates_1HWD: torch.Tensor, x_M: torch.Tensor, dimensions_HWD: tuple):
+def pointcloud_to_volume(coordinates_M3: torch.Tensor, x_M: torch.Tensor, dimensions_HWD: tuple):
+    if not (coordinates_M3.shape[1] == 3 and len(coordinates_M3)):
+        raise ValueError("Coordinates must be of shape [M, 3]")
+    if not (x_M.shape[0] == coordinates_M3.shape[0]):
+        raise ValueError("x_M must have the same number of points as coordinates_M3")
+    if not (len(dimensions_HWD) == 3):
+        raise ValueError("dimensions_HWD must be a tuple of length 3")
     volume = torch.zeros(*dimensions_HWD, dtype=x_M.dtype, device=x_M.device)
-    volume[coordinates_1HWD[:, 0].long(), coordinates_1HWD[:, 1].long(), coordinates_1HWD[:, 2].long()] = x_M
+    volume[coordinates_M3[:, 0].long(), coordinates_M3[:, 1].long(), coordinates_M3[:, 2].long()] = x_M
     return volume
 
 
