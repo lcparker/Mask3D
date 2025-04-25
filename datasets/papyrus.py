@@ -11,60 +11,6 @@ from volume_pointcloud_conversion import dense_volume_with_labels_to_points
 from scrolls_instance_segmentation.data.synthetic_datamodule_cubes import SyntheticInstanceCubesDataset
 from scrolls_instance_segmentation.data.real_scroll_datamodule_cubes import InstanceCubesDataset
 
-
-class PapyrusVolume:
-    def __init__(self, volume_nrrd: Nrrd, labelmap_nrrd: Nrrd):
-        # Convert to point cloud format 
-        coords, features, labels = dense_volume_with_labels_to_points(
-            volume_nrrd, 
-            labelmap_nrrd,
-            min_density=0.1, # Tune this threshold based on your data
-            subsample_factor=4 # Can adjust based on memory constraints
-        )
-        
-        # Create the required data format for Mask3D training
-        self.coordinates = coords  # Coordinates of points
-        self.features = features   # Density values at points
-        self.labels = labels       # Instance labels at points
-        self.num_instances = len(np.unique(labels[labels > 0]))
-        
-        # Create target format Mask3D expects
-        self.target = {
-            "labels": labels,  # Instance IDs # BUG: these are probably semantic class labels
-            "masks": torch.zeros(self.num_instances, len(coords)),  # Binary masks for each instance
-        }
-        
-        # Fill in target masks
-        for i, inst_id in enumerate(np.unique(labels[labels > 0])):
-            self.target["masks"][i] = (labels == inst_id)
-            
-class PapyrusDataset(torch.utils.data.Dataset):
-    def __init__(self, nrrd_paths: List[Tuple[Path, Path]]):
-        """
-        Args:
-            nrrd_paths: List of (volume_path, labelmap_path) pairs
-        """
-        self.papyrus_volumes = []
-        for vol_path, label_path in nrrd_paths:
-            volume = Nrrd.from_file(vol_path)
-            labelmap = Nrrd.from_file(label_path)
-            self.papyrus_volumes.append(PapyrusVolume(volume, labelmap))
-            
-    def __len__(self):
-        return len(self.papyrus_volumes)
-        
-    def __getitem__(self, idx):
-        example = self.papyrus_volumes[idx]
-        return (
-            ME.SparseTensor(
-                features=example.features,
-                coordinates=example.coordinates,
-            ),
-            example.target,
-            str(idx)  # Filename/identifier
-        )
-        
-
 synthetic_cubes = SyntheticInstanceCubesDataset(
   reference_volume_filename= "reference_volume.nrrd",
   reference_label_filename= "reference_labels.nrrd",
@@ -73,16 +19,15 @@ synthetic_cubes = SyntheticInstanceCubesDataset(
   layer_shuffle= True
 )
 
-real_cubes = InstanceCubesDataset(
-    Path("/workspace/code/cubes/")
-    )
-
 class SyntheticPapyrusDataset(IterableDataset):
     def __init__(self, mode="train", label_offset=0):
         super().__init__()
         if not mode in ["train", "validation"]:
             raise ValueError("mode must be either 'train' or 'val'")
+
         self.cube_dataset = InstanceCubesDataset(Path("/workspace/code/cubes/") / ("training" if mode == "train" else "validation"))
+        # self.cube_dataset = synthetic_cubes
+
         self.label_offset = label_offset
         self.label_info = None
         self.label_info = [
