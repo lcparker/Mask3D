@@ -522,12 +522,13 @@ class InstanceSegmentation(pl.LightningModule):
                 torch.use_deterministic_algorithms(True)
 
         # Save inputs and outputs on validation epoch
-        save_dir = Path(self.config.general.save_dir)
-        torch.save(data.coordinates, save_dir/f"coordinates_{file_names[0]}_epoch={self.current_epoch}_idx={batch_idx}.pt")
-        torch.save(data.features,save_dir/ f"features_{file_names[0]}_epoch={self.current_epoch}_idx={batch_idx}.pt")
-        torch.save(raw_coordinates,save_dir/ f"raw_coordinates_{file_names[0]}_epoch={self.current_epoch}_idx={batch_idx}.pt")
-        torch.save(target,save_dir/ f"target_{file_names[0]}_epoch={self.current_epoch}_idx={batch_idx}.pt")
-        torch.save(output['pred_masks'],save_dir/ f"output_mask_logits_{file_names[0]}_epoch={self.current_epoch}_idx={batch_idx}.pt")
+        if batch_idx == 0:
+            save_dir = Path(self.config.general.save_dir)
+            torch.save(data.coordinates, save_dir/f"coordinates_{file_names[0]}_epoch={self.current_epoch}.pt")
+            torch.save(data.features,save_dir/ f"features_{file_names[0]}_epoch={self.current_epoch}.pt")
+            torch.save(raw_coordinates,save_dir/ f"raw_coordinates_{file_names[0]}_epoch={self.current_epoch}.pt")
+            torch.save(target,save_dir/ f"target_{file_names[0]}_epoch={self.current_epoch}.pt")
+            torch.save(output['pred_masks'],save_dir/ f"output_mask_logits_{file_names[0]}_epoch={self.current_epoch}.pt")
 
         cpu_coordinates = raw_coordinates.cpu()
         shape = (96,96,96)
