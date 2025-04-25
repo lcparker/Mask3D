@@ -11,14 +11,7 @@ from torch_scatter import scatter_mean
 import matplotlib
 from benchmark.evaluate_semantic_instance import evaluate
 from collections import defaultdict
-from sklearn.cluster import DBSCAN
 from utils.votenet_utils.eval_det import eval_det
-from datasets.scannet200.scannet200_splits import (
-    HEAD_CATS_SCANNET_200,
-    TAIL_CATS_SCANNET_200,
-    COMMON_CATS_SCANNET_200,
-    VALID_CLASS_IDS_200_VALIDATION,
-)
 
 import hydra
 import MinkowskiEngine as ME
@@ -564,9 +557,6 @@ class InstanceSegmentation(pl.LightningModule):
             original_normals,
             raw_coordinates,
             data_idx,
-            backbone_features=rescaled_pca
-            if self.config.general.save_visualizations
-            else None,
         )
 
         if self.config.data.test_mode != "test":
