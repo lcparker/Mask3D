@@ -8,8 +8,6 @@ import math
 from eval.instance_logger import WandbInstanceImageLogger
 import pyviz3d.visualizer as vis
 from torch_scatter import scatter_mean
-import matplotlib
-from benchmark.evaluate_semantic_instance import evaluate
 from collections import defaultdict
 from utils.votenet_utils.eval_det import eval_det
 
@@ -25,6 +23,7 @@ import colorsys
 from typing import List, Tuple
 import functools
 
+from synthetic_pages.nrrd_file import Nrrd
 from volume_pointcloud_conversion import pointcloud_to_volume
 
 
@@ -514,37 +513,26 @@ class InstanceSegmentation(pl.LightningModule):
             if self.config.trainer.deterministic:
                 torch.use_deterministic_algorithms(True)
 
-        # Save inputs and outputs on validation epoch
+        shape = (96, 96, 96)  # Define the desired shape for the volumes
+
+        features_volume = pointcloud_to_volume( data.coordinates.cpu(), data.features[..., 0].cpu(), dimensions_HWD=shape)
+        target_volume = pointcloud_to_volume( data.coordinates.cpu(), target[0]['masks'].cpu().int().argmax(dim=0), dimensions_HWD=shape)
+        output_volume = pointcloud_to_volume( data.coordinates.cpu(), F.sigmoid(output['pred_masks'][0].cpu()).argmax(dim=-1), dimensions_HWD=shape)
+
         if batch_idx == 0:
             save_dir = Path(self.config.general.save_dir)
-            torch.save(data.coordinates, save_dir/f"coordinates_{file_names[0]}_epoch={self.current_epoch}.pt")
-            torch.save(data.features,save_dir/ f"features_{file_names[0]}_epoch={self.current_epoch}.pt")
-            torch.save(raw_coordinates,save_dir/ f"raw_coordinates_{file_names[0]}_epoch={self.current_epoch}.pt")
-            torch.save(target,save_dir/ f"target_{file_names[0]}_epoch={self.current_epoch}.pt")
-            torch.save(output['pred_masks'],save_dir/ f"output_mask_logits_{file_names[0]}_epoch={self.current_epoch}.pt")
+            save_dir.mkdir(parents=True, exist_ok=True)
+            Nrrd.from_volume(features_volume.numpy()).write( save_dir / f"features_{file_names[0]}_epoch={self.current_epoch}.nrrd")
+            Nrrd.from_volume(target_volume.numpy()).write( save_dir / f"target_{file_names[0]}_epoch={self.current_epoch}.nrrd")
+            Nrrd.from_volume(output_volume.numpy()).write( save_dir / f"output_mask_logits_{file_names[0]}_epoch={self.current_epoch}.nrrd")
 
-        cpu_coordinates = raw_coordinates.cpu()
-        shape = (96,96,96)
-        input_features_volume = pointcloud_to_volume(cpu_coordinates, data.features[..., 0].cpu(), dimensions_HWD=shape)[None, None,...]
-        predicted_instances_volume = pointcloud_to_volume(cpu_coordinates, F.sigmoid(output['pred_masks'][0].cpu()).argmax(dim=-1),dimensions_HWD=shape )[None, None, ...]
-        ground_truth_instances_volume = pointcloud_to_volume(cpu_coordinates, target[0]['masks'].cpu().int().argmax(dim=0), dimensions_HWD=shape)[None, None, ...]
-        self.instance_logger.log(input_features_volume, predicted_instances_volume, ground_truth_instances_volume, self.global_step, n_slices=8, batch_index=0)
-
-
-        if self.config.general.save_visualizations:
-            backbone_features = (
-                output["backbone_features"].F.detach().cpu().numpy()
-            )
-            from sklearn import decomposition
-
-            pca = decomposition.PCA(n_components=3)
-            pca.fit(backbone_features)
-            pca_features = pca.transform(backbone_features)
-            rescaled_pca = (
-                255
-                * (pca_features - pca_features.min())
-                / (pca_features.max() - pca_features.min())
-            )
+        self.instance_logger.log(
+            features_volume[None, None, ...], 
+            output_volume[None, None, ...],
+            target_volume[None, None, ...],
+            self.global_step, 
+            n_slices=8, 
+            batch_index=0)
 
         self.eval_instance_step(
             output,
