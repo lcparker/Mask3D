@@ -59,7 +59,10 @@ class SyntheticPapyrusDataset(IterableDataset):
                 align_corners=True
             )[0].long()
             coords, features, point_labels = dense_volume_with_labels_to_points(
-                batch['vol'], batch['lbl'], min_density=0.1
+                batch['vol'], 
+                batch['lbl'], 
+                min_density=batch['vol'].max()/2, 
+                subsample_factor=2
             )
             
             # Get instance IDs once, excluding background (0)
