@@ -137,29 +137,11 @@ class HungarianMatcher(nn.Module):
                 point_idx = torch.randperm(
                     tgt_mask.shape[1], device=tgt_mask.device
                 )[: int(self.num_points * tgt_mask.shape[1])]
-                # point_idx = torch.randint(0, tgt_mask.shape[1], size=(self.num_points,), device=tgt_mask.device)
             else:
                 # sample all points
                 point_idx = torch.arange(
                     tgt_mask.shape[1], device=tgt_mask.device
                 )
-
-            # out_mask = out_mask[:, None]
-            # tgt_mask = tgt_mask[:, None]
-            # all masks share the same set of points for efficient matching!
-            # point_coords = torch.rand(1, self.num_points, 2, device=out_mask.device)
-            # get gt labels
-            # tgt_mask = point_sample(
-            #     tgt_mask,
-            #     point_coords.repeat(tgt_mask.shape[0], 1, 1),
-            #     align_corners=False,
-            # ).squeeze(1)
-
-            # out_mask = point_sample(
-            #     out_mask,
-            #     point_coords.repeat(out_mask.shape[0], 1, 1),
-            #     align_corners=False,
-            # ).squeeze(1)
 
             with autocast(enabled=False):
                 out_mask = out_mask.float()
