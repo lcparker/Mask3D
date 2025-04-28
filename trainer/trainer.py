@@ -109,7 +109,7 @@ class InstanceSegmentation(pl.LightningModule):
         self.iou = IoU()
         # misc
         self.labels_info = dict()
-        self.instance_logger = WandbInstanceImageLogger(num_instances=config.model.num_queries)
+        self.instance_logger = WandbInstanceImageLogger()
         self.matches_logger = PredictionMatcher()
 
     def forward(
@@ -299,12 +299,11 @@ class InstanceSegmentation(pl.LightningModule):
             Nrrd.from_volume(output_volume.numpy()).write( save_dir / f"output_mask_logits_{file_names[0]}_epoch={self.current_epoch}.nrrd")
 
         self.instance_logger.log(
-            features_volume[None, None, ...], 
-            output_volume[None, None, ...],
-            target_volume[None, None, ...],
+            features_volume, 
+            output_volume,
+            target_volume,
             self.global_step, 
-            n_slices=8, 
-            batch_index=0)
+            n_slices=8)
 
         # matches = self.matches_logger.matched_predictions(output_volume[None, ...], target_volume[None, ...])
         # self.log_dict({"matches": matches})
