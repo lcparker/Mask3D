@@ -22,7 +22,7 @@ python main_instance_segmentation.py
 ```
 which will start a run according to the configuration as set in the files of the `conf/` directory. Configuration is handled by Meta's `Hydra` library. Their [documentation](https://hydra.cc/docs/1.3/tutorials/intro/) provides a good overview of how to use Hydra.
 
-Before you begin training, you will need to set up Weights and Biases. In your weights and biases account, create a project called `mask3d` and a workspace also called `mask3d`. Once that's done, you should be able to begin training.
+You will need to set up Weights and Biases. Create a weights and biases account, then create a project called `mask3d` and a workspace also called `mask3d`. Once that's done, you should be able to begin training by running `main_instance_segmentation.py`.
 
 ## Installation instructions
 I had some difficulty getting the environment built in the original repository according to their instructions and those in the repo's git issues. Below provides instructions for what worked for me to get the repo running.  The following instructions are verified to work on vast.ai instances. Modifications might be necessary for other CUDA versions.
