@@ -5,7 +5,7 @@ from uuid import uuid4
 import hydra
 from dotenv import load_dotenv
 from omegaconf import DictConfig, OmegaConf
-from trainer.trainer import InstanceSegmentation, RegularCheckpointing
+from trainer.trainer import InstanceSegmentation, LoadSeedWeights, RegularCheckpointing
 from pytorch_lightning.callbacks import ModelCheckpoint
 from utils.utils import (
     flatten_dict,
@@ -73,6 +73,7 @@ def train(cfg: DictConfig):
         callbacks.append(hydra.utils.instantiate(cb))
 
     callbacks.append(RegularCheckpointing())
+    callbacks.append(LoadSeedWeights(cfg.general.initial_weights_path))
 
     runner = Trainer(
         logger=loggers,

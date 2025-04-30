@@ -1,6 +1,7 @@
 general:
   train_mode: true
   task: "instance_segmentation"
+  initial_weights_path: "pretrained_weights.ckpt"
   seed: null
   checkpoint: null
   backbone_checkpoint: null

@@ -44,6 +44,15 @@ def get_evenly_distributed_colors(
         )
     )
 
+class LoadSeedWeights(pl.Callback):
+    def __init__(self, path: str, strict: bool = False):
+        self.path, self.strict = path, strict
+
+    def on_fit_start(self, trainer, pl_module):
+        if trainer.ckpt_path is None: 
+            raw = torch.load(self.path, map_location=pl_module.device)
+            sd  = raw["state_dict"] if "state_dict" in raw else raw
+            pl_module.load_state_dict(sd, strict=self.strict)
 
 class RegularCheckpointing(pl.Callback):
     def on_train_epoch_end(
