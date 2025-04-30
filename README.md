@@ -1,3 +1,4 @@
+_Project status: work in progress. Open-sourcing in case others find it useful, but it isn't quite at the working prototype stage yet._
 ## What is this?
 This is a fork of the [Mask3D repo](https://github.com/JonasSchult/Mask3D) tailored to doing instance segmentation for data from the [Vesuvius Challenge](https://scrollprize.org).
 
