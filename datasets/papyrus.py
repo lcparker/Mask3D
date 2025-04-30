@@ -8,8 +8,8 @@ import MinkowskiEngine as ME
 from torch.utils.data import IterableDataset
 from synthetic_pages.nrrd_file import Nrrd
 from volume_pointcloud_conversion import dense_volume_with_labels_to_points
-from scrolls_instance_segmentation.data.synthetic_datamodule_cubes import SyntheticInstanceCubesDataset
-from scrolls_instance_segmentation.data.real_scroll_datamodule_cubes import InstanceCubesDataset
+from synthetic_pages.datasets.synthetic_datamodule_cubes import SyntheticInstanceCubesDataset
+from synthetic_pages.datasets.real_scroll_datamodule_cubes import InstanceCubesDataset
 
 synthetic_cubes = SyntheticInstanceCubesDataset(
   reference_volume_filename= "reference_volume.nrrd",
