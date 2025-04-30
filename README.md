@@ -1,4 +1,5 @@
-_Project status: work in progress. Open-sourcing in case others find it useful, but it isn't quite at the working prototype stage yet._
+_Project status: work in progress. I'm open-sourcing it in case others find it useful, but it isn't quite at the working prototype stage yet._
+
 ## What is this?
 This is a fork of the [Mask3D repo](https://github.com/JonasSchult/Mask3D) tailored to doing instance segmentation for data from the [Vesuvius Challenge](https://scrollprize.org).
 
@@ -13,6 +14,15 @@ Nrrd.from_volume(features_volume.numpy()).write(save_path)
 ```
 
 For an example of this in code, see InstanceSegmentation.eval_step, lines 297-308 of `trainer.py`. 
+
+## Usage
+As-is, this can be used as a working base to train instance segmentation network based on (a) volumes taken from real scrolls, or (b) synthetically generated volumes. To do (a), set the cube_dataset parameter in the constructor of `PapyrusDataset` to an instance of `InstanceCubesDataset`. To do (b), set it to `SyntheticInstanceCubesDataset`. Cubes are currently downsampled to (96, 96, 96) volumes before being converted into pointclouds because of memory constraints. To run training, simply call
+```
+python main_instance_segmentation.py
+```
+which will start a run according to the configuration as set in the files of the `conf/` directory. Configuration is handled by Meta's `Hydra` library. Their [documentation](https://hydra.cc/docs/1.3/tutorials/intro/) provides a good overview of how to use Hydra.
+
+Before you begin training, you will need to set up Weights and Biases. In your weights and biases account, create a project called `mask3d` and a workspace also called `mask3d`. Once that's done, you should be able to begin training.
 
 ## Installation instructions
 I had some difficulty getting the environment built in the original repository according to their instructions and those in the repo's git issues. Below provides instructions for what worked for me to get the repo running.  The following instructions are verified to work on vast.ai instances. Modifications might be necessary for other CUDA versions.
@@ -32,6 +42,7 @@ python -m pip install -e ../synthetic-pages
 ```
 You may need to install with the `--no-deps` parameter if there are package version conflicts, then `pip install` any missing packages as they are found. The `torch-scatter` module may need to build from source. If you set the `TORCH_SCATTER_WHEEL` environment variable to the prebuilt wheel included in this repo (`TORCH_SCATTER_WHEEL=torch_scatter-2.1.2-cp310-cp310-linux_x86_64.whl`) it might speed up the environment creation process.
 
+----
 ## Mask3D: Mask Transformer for 3D Instance Segmentation
 <div align="center">
 <a href="https://jonasschult.github.io/">Jonas Schult</a><sup>1</sup>, <a href="https://francisengelmann.github.io/">Francis Engelmann</a><sup>2,3</sup>, <a href="https://www.vision.rwth-aachen.de/person/10/">Alexander Hermans</a><sup>1</sup>, <a href="https://orlitany.github.io/">Or Litany</a><sup>4</sup>, <a href="https://inf.ethz.ch/people/person-detail.MjYyNzgw.TGlzdC8zMDQsLTg3NDc3NjI0MQ==.html">Siyu Tang</a><sup>3</sup>,  <a href="https://www.vision.rwth-aachen.de/person/1/">Bastian Leibe</a><sup>1</sup>
