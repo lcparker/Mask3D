@@ -1,4 +1,4 @@
-_Project status: work in progress. It runs successfully and produces a sensible output, but doesn't learn good enough instane predictions at this stage. I'm open-sourcing it in case others find it useful as a base to train from._
+_Project status: work in progress. It runs successfully and produces a sensible output, but doesn't learn good enough instance predictions at this stage. I'm open-sourcing it in case others find it useful as a base to train from._
 
 ## What is this?
 This is a fork of the [Mask3D repo](https://github.com/JonasSchult/Mask3D) tailored to doing instance segmentation for data from the [Vesuvius Challenge](https://scrollprize.org).
