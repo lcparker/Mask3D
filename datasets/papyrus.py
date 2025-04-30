@@ -19,7 +19,7 @@ synthetic_cubes = SyntheticInstanceCubesDataset(
   layer_shuffle= True
 )
 
-class SyntheticPapyrusDataset(IterableDataset):
+class PapyrusDataset(IterableDataset):
     def __init__(self, mode="train", label_offset=0):
         super().__init__()
         if not mode in ["train", "validation"]:

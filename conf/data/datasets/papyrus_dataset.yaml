@@ -1,15 +1,15 @@
 # @package data
 train_dataset:
-  _target_: datasets.papyrus.SyntheticPapyrusDataset
+  _target_: datasets.papyrus.PapyrusDataset
   mode: "${data.train_mode}"
   label_offset: 0
 
 validation_dataset:
-  _target_: datasets.papyrus.SyntheticPapyrusDataset
+  _target_: datasets.papyrus.PapyrusDataset
   mode: "${data.validation_mode}"
   label_offset: 0
 
 test_dataset:
-  _target_: datasets.papyrus.SyntheticPapyrusDataset
+  _target_: datasets.papyrus.PapyrusDataset
   mode: "${data.test_mode}"
   label_offset: 0
