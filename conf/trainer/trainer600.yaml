@@ -1,6 +1,6 @@
 # @package _group_
 deterministic: false
-max_epochs: 400
+max_epochs: 800
 min_epochs: 1
 resume_from_checkpoint: null
 check_val_every_n_epoch: 20
