@@ -18,7 +18,7 @@ general:
   ignore_class_threshold: 100
   project_name: mask3d
   workspace: mask3d
-  experiment_name: no-pretraining-5-faster-lr-fromstart
+  experiment_name: finetune-from-pretrained
   num_targets: 2
   add_instance: true
   dbscan_eps: 0.95
@@ -61,7 +61,7 @@ defaults:
   - model: mask3d
   - metrics: miou
   - optimizer: adamw
-  - scheduler: onecyclelr
+  - scheduler: exponentiallr
   - trainer: trainer600
   - callbacks: callbacks_instance_segmentation
   - matcher: hungarian_matcher
