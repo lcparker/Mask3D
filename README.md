@@ -3,7 +3,7 @@ _Project status: work in progress. It runs successfully and produces a sensible 
 ## What is this?
 This is a fork of the [Mask3D repo](https://github.com/JonasSchult/Mask3D) tailored to doing instance segmentation for data from the [Vesuvius Challenge](https://scrollprize.org).
 
-This codebase is simplified compared to the original, specifically to be used on the task of instance segmentation of 3D cube volumes. `datasets/papyrus.py` contains `PapyrusDataset`, which wraps a PyTorch dataset such as those contained in the `datasets` module of the synthetic pages repository `github.com/lcparker/synthetic-pages`. This allows converting NRRD files representing scroll data (or synthetically generated pseudo-scrolls) into a format that Mask3D can use.
+This codebase is simplified compared to the original, specifically to be used on the task of instance segmentation of 3D cube volumes. `datasets/papyrus.py` contains `PapyrusDataset`, which wraps a PyTorch dataset such as those contained in the `datasets` module of the [synthetic pages repository](https://github.com/lcparker/synthetic-pages). This allows converting NRRD files representing scroll data (or synthetically generated pseudo-scrolls) into a format that Mask3D can use.
 
 Mask3D outputs point-clouds, but these can be converted back into 3D scroll volumes in the following manner:
 
