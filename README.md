@@ -1,3 +1,36 @@
+## What is this?
+This is a fork of the [Mask3D repo](https://github.com/JonasSchult/Mask3D) tailored to doing instance segmentation for data from the [Vesuvius Challenge](https://scrollprize.org).
+
+This codebase is simplified compared to the original, specifically to be used on the task of instance segmentation of 3D cube volumes. `datasets/papyrus.py` contains `PapyrusDataset`, which wraps a PyTorch dataset such as those contained in the `datasets` module of the synthetic pages repository `github.com/lcparker/synthetic-pages`. This allows converting NRRD files representing scroll data (or synthetically generated pseudo-scrolls) into a format that Mask3D can use.
+
+Mask3D outputs point-clouds, but these can be converted back into 3D scroll volumes in the following manner:
+
+```
+shape = (96,96,96) # size of the input volumes used
+features_volume = pointcloud_to_volume( raw_coordinates.cpu(), features, dimensions_HWD=shape)
+Nrrd.from_volume(features_volume.numpy()).write(save_path)
+```
+
+For an example of this in code, see InstanceSegmentation.eval_step, lines 297-308 of `trainer.py`. 
+
+## Installation instructions
+I had some difficulty getting the environment built in the original repository according to their instructions and those in the repo's git issues. Below provides instructions for what worked for me to get the repo running.  The following instructions are verified to work on vast.ai instances. Modifications might be necessary for other CUDA versions.
+
+If you don't already have conda/miniconda:
+```
+bash install-miniconda.sh
+source ~/miniconda3/bin/activate
+```
+Then, from the root directory of this repository:
+```
+bash create_environment.sh
+```
+Add the prompted directory to your `LD_LIBRARY_PATH` if needed. Then, install the `synthetic_pages` repository from git as an editable package using `pip`:
+```
+python -m pip install -e ../synthetic-pages
+```
+You may need to install with the `--no-deps` parameter if there are package version conflicts, then `pip install` any missing packages as they are found. The `torch-scatter` module may need to build from source. If you set the `TORCH_SCATTER_WHEEL` environment variable to the prebuilt wheel included in this repo (`TORCH_SCATTER_WHEEL=torch_scatter-2.1.2-cp310-cp310-linux_x86_64.whl`) it might speed up the environment creation process.
+
 ## Mask3D: Mask Transformer for 3D Instance Segmentation
 <div align="center">
 <a href="https://jonasschult.github.io/">Jonas Schult</a><sup>1</sup>, <a href="https://francisengelmann.github.io/">Francis Engelmann</a><sup>2,3</sup>, <a href="https://www.vision.rwth-aachen.de/person/10/">Alexander Hermans</a><sup>1</sup>, <a href="https://orlitany.github.io/">Or Litany</a><sup>4</sup>, <a href="https://inf.ethz.ch/people/person-detail.MjYyNzgw.TGlzdC8zMDQsLTg3NDc3NjI0MQ==.html">Siyu Tang</a><sup>3</sup>,  <a href="https://www.vision.rwth-aachen.de/person/1/">Bastian Leibe</a><sup>1</sup>
@@ -195,9 +228,9 @@ Following PointGroup, HAIS and SoftGroup, we finetune a model pretrained on Scan
 ## BibTeX :pray:
 ```
 @article{Schult23ICRA,
-  title     = {{Mask3D: Mask Transformer for 3D Semantic Instance Segmentation}},
-  author    = {Schult, Jonas and Engelmann, Francis and Hermans, Alexander and Litany, Or and Tang, Siyu and Leibe, Bastian},
-  booktitle = {{International Conference on Robotics and Automation (ICRA)}},
-  year      = {2023}
+title     = {{Mask3D: Mask Transformer for 3D Semantic Instance Segmentation}},
+author    = {Schult, Jonas and Engelmann, Francis and Hermans, Alexander and Litany, Or and Tang, Siyu and Leibe, Bastian},
+booktitle = {{International Conference on Robotics and Automation (ICRA)}},
+year      = {2023}
 }
 ```
