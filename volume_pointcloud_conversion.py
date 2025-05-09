@@ -1,4 +1,4 @@
-from synthetic_pages.nrrd_file import Nrrd
+from synthetic_pages.types.nrrd import Nrrd
 import numpy as np
 import torch
 

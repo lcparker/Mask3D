@@ -4,9 +4,7 @@ import torch
 from torch.nn import functional as F
 
 import numpy as np
-import MinkowskiEngine as ME
 from torch.utils.data import IterableDataset
-from synthetic_pages.nrrd_file import Nrrd
 from volume_pointcloud_conversion import dense_volume_with_labels_to_points
 from synthetic_pages.datasets.synthetic_datamodule_cubes import SyntheticInstanceCubesDataset
 from synthetic_pages.datasets.real_scroll_datamodule_cubes import InstanceCubesDataset
