@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Tuple
+from typing import NamedTuple
 import torch
 from torch.nn import functional as F
 
@@ -8,6 +8,7 @@ from torch.utils.data import IterableDataset
 from volume_pointcloud_conversion import dense_volume_with_labels_to_points
 from synthetic_pages.datasets.synthetic_datamodule_cubes import SyntheticInstanceCubesDataset
 from synthetic_pages.datasets.real_scroll_datamodule_cubes import InstanceCubesDataset
+from synthetic_pages.datasets.instance_volume_batch import InstanceVolumeBatch
 
 synthetic_cubes = SyntheticInstanceCubesDataset(
   reference_volume_filename= "reference_volume.nrrd",
@@ -44,21 +45,22 @@ class PapyrusDataset(IterableDataset):
         idx=0
         for batch in self.cube_dataset:
             new_size = (96,96,96)
-            batch['vol'] = F.interpolate(
-                batch['vol'][None, None].float(), 
+            downsized_volume = F.interpolate(
+                batch.vol[None, None].float(), 
                 size=new_size, 
                 mode='trilinear', 
                 align_corners=True
             )[0][0]
-            batch['lbl'] = F.interpolate(
+            downsized_labels = F.interpolate(
                 batch['lbl'][None].float(), 
                 size=new_size, 
                 mode='trilinear', 
                 align_corners=True
             )[0].long()
+            batch = InstanceVolumeBatch(vol=downsized_volume, lbl=downsized_labels)
             coords, features, point_labels = dense_volume_with_labels_to_points(
-                batch['vol'], 
-                batch['lbl'], 
+                batch.vol, 
+                batch.lbl, 
                 min_density=batch['vol'].max()/2, 
                 subsample_factor=2
             )
