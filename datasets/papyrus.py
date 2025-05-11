@@ -52,7 +52,7 @@ class PapyrusDataset(IterableDataset):
                 align_corners=True
             )[0][0]
             downsized_labels = F.interpolate(
-                batch['lbl'][None].float(), 
+                batch.lbl[None].float(), 
                 size=new_size, 
                 mode='trilinear', 
                 align_corners=True
@@ -61,15 +61,13 @@ class PapyrusDataset(IterableDataset):
             coords, features, point_labels = dense_volume_with_labels_to_points(
                 batch.vol, 
                 batch.lbl, 
-                min_density=batch['vol'].max()/2, 
+                min_density=batch.vol.max()/2, 
                 subsample_factor=2
             )
             
             # Get instance IDs once, excluding background (0)
             instance_ids = torch.unique(point_labels)[1:]
             num_points = len(point_labels)
-            
-            # Create the (M, 3) tensor
             
             segmentation_instance_tensor = torch.zeros((num_points, 3), dtype=torch.long)
             segmentation_instance_tensor[:, 0] = 1  # Segment mask
