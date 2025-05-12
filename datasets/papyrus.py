@@ -18,6 +18,17 @@ synthetic_cubes = SyntheticInstanceCubesDataset(
   layer_shuffle= True
 )
 
+class PapyrusBatch(NamedTuple):
+    coordinates: np.ndarray # (M ,3)
+    features: np.ndarray # (M, 1) -- intensity values
+    instance_labels: np.ndarray # (M, 3) -- each row is segment mask, instance mask, and segment mask
+    name: str
+    original_colors: None # Unused
+    original_normals: None # Unused
+    original_coordinates: torch.Tensor # (M ,3)
+    id: None # Unused
+    volume_batch: dict
+
 class PapyrusDataset(IterableDataset):
     def __init__(self, mode="train", label_offset=0):
         super().__init__()
@@ -75,12 +86,14 @@ class PapyrusDataset(IterableDataset):
             segmentation_instance_tensor[:, 2] = 1  # Segment masks
 
             # Return the updated output
-            yield (coords.numpy(), 
-                    features.numpy(), 
-                    segmentation_instance_tensor.numpy(), 
-                    f"data_{idx}", 
-                    None, 
-                    None, 
-                    coords.numpy().copy(), 
-                    None)
+            yield PapyrusBatch(
+                coords.numpy(), 
+                features.numpy(), 
+                segmentation_instance_tensor.numpy(), 
+                f"data_{idx}", 
+                None, 
+                None, 
+                coords.numpy().copy(), 
+                None,
+                batch)
             idx += 1
