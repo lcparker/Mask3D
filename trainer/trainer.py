@@ -24,7 +24,7 @@ import colorsys
 from typing import List, Tuple
 import functools
 
-from synthetic_pages.nrrd_file import Nrrd
+from synthetic_pages.types.nrrd import Nrrd
 from volume_pointcloud_conversion import pointcloud_to_volume
 
 
