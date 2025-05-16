@@ -15,7 +15,9 @@ synthetic_cubes = SyntheticInstanceCubesDataset(
   reference_label_filename= "reference_labels.nrrd",
   spatial_transform= True,
   layer_dropout= True,
-  layer_shuffle= True
+  layer_shuffle= True,
+  num_layers_range=(6,17),
+  output_volume_size=(96, 96, 96),
 )
 
 class PapyrusBatch(NamedTuple):
@@ -35,8 +37,8 @@ class PapyrusDataset(IterableDataset):
         if not mode in ["train", "validation"]:
             raise ValueError("mode must be either 'train' or 'val'")
 
-        # self.cube_dataset = InstanceCubesDataset(Path("/workspace/code/cubes/") / ("training" if mode == "train" else "validation"))
-        # self.cube_dataset = InstanceCubesDataset(Path("/Users/lachlan/Code/cubes") / ("training" if mode == "train" else "validation"))
+        # self.cube_dataset = InstanceCubesDataset(Path("/workspace/code/cubes/") / ("training" if mode == "train" else "validation"), output_volume_size=(96, 96, 96))
+        # self.cube_dataset = InstanceCubesDataset(Path("/Users/lachlan/Code/cubes") / ("training" if mode == "train" else "validation"), output_volume_size=(96, 96, 96))
         self.cube_dataset = synthetic_cubes
 
         self.label_offset = label_offset
@@ -56,20 +58,6 @@ class PapyrusDataset(IterableDataset):
     def __iter__(self):
         idx=0
         for batch in self.cube_dataset:
-            new_size = (96,96,96)
-            downsized_volume = F.interpolate(
-                batch.vol[None, None].float(), 
-                size=new_size, 
-                mode='trilinear', 
-                align_corners=True
-            )[0][0]
-            downsized_labels = F.interpolate(
-                batch.lbl[None].float(), 
-                size=new_size, 
-                mode='trilinear', 
-                align_corners=True
-            )[0].long()
-            batch = InstanceVolumeBatch(vol=downsized_volume, lbl=downsized_labels)
             coords, features, point_labels = dense_volume_with_labels_to_points(
                 batch.vol, 
                 batch.lbl, 
