@@ -82,6 +82,7 @@ def train(cfg: DictConfig):
         weights_save_path=str(cfg.general.save_dir),
         **cfg.trainer,
     )
+    logging.getLogger(__name__).info("Training...")
     runner.fit(model)
 
 

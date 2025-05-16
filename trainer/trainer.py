@@ -1,3 +1,4 @@
+import logging
 import gc
 from contextlib import nullcontext
 from pathlib import Path
@@ -50,9 +51,14 @@ class LoadSeedWeights(pl.Callback):
 
     def on_fit_start(self, trainer, pl_module):
         if trainer.ckpt_path is None: 
-            raw = torch.load(self.path, map_location=pl_module.device)
+            try:
+                raw = torch.load(self.path, map_location=pl_module.device)
+            except FileNotFoundError as e:
+                logging.getLogger(__name__).error(f"Unable to load initial weights: {e}")
+                return
             sd  = raw["state_dict"] if "state_dict" in raw else raw
             pl_module.load_state_dict(sd, strict=self.strict)
+            logging.getLogger(__name__).info(f"Checkpoint loaded from {self.path}")
 
 class RegularCheckpointing(pl.Callback):
     def on_train_epoch_end(
@@ -67,6 +73,7 @@ class InstanceSegmentation(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
 
+        self.lr = config.optimizer.lr
         self.decoder_id = config.general.decoder_id
 
         if config.model.train_on_segments:
