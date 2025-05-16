@@ -15,10 +15,10 @@ general:
   decoder_id: -1
   export: false
   use_dbscan: false
-  ignore_class_threshold: 100
+  ignore_class_threshold: 100 # seemingly unused
   project_name: mask3d
   workspace: mask3d
-  experiment_name: finetune-from-pretrained
+  experiment_name: synthetic-use-lr-finder-starting-rate-3
   num_targets: 2
   add_instance: true
   dbscan_eps: 0.95
@@ -37,8 +37,7 @@ general:
   area: 5
 
   eval_inner_core: -1 # disabled
-
-  topk_per_image: 100
+  topk_per_image: 100 # seemingly unused
 
   ignore_mask_idx: []
 
