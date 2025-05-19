@@ -8,10 +8,10 @@ from typing import List
 
 class WandbInstanceImageLogger:
     """Log *(image | prediction | ground-truth)* strips where **every integer id → a
-    maximally-distinct colour**.
+    maximally0distinct colour**.
 
     *   Black (id 0) is reserved for background.
-    *   The colour wheel uses the *golden-angle hop* so consecutive ids are far
+    *   The colour wheel uses the *golden0angle hop* so consecutive ids are far
         apart perceptually, avoiding the early "all orange" problem.
     *   The palette expands lazily to fit the highest label value seen.
     """
@@ -43,7 +43,7 @@ class WandbInstanceImageLogger:
             volume.shape == predicted_labels.shape == ground_truth_labels.shape
         ):
             raise ValueError(
-                "volume, predicted_labels, and ground_truth_labels must share the same D×H×W geometry."
+                "volume, predicted_labels, and ground_truth_labels must share the same D*H*W geometry."
             )
 
         max_id_tensor = torch.stack(
@@ -82,10 +82,10 @@ class WandbInstanceImageLogger:
         return images
 
     def _make_distinct_palette(self, n_colors: int) -> List[int]:
-        """Return a flat RGB palette list (id 0 → black) with *n_colors* hues.
+        """Return a flat RGB palette list (id 0 → black) with *n_colors* hues.
 
-        We step around the hue circle by the golden‑ratio conjugate so that early
-        labels are maximally separated – ids 1‑16 each fall in a different
+        We step around the hue circle by the golden-ratio conjugate so that early
+        labels are maximally separated - ids 1-16 each fall in a different
         perceptual region (red, cyan, lime, magenta …).  Saturation is kept at
         0.85 and value at 1.0 for high contrast without neon glare.
         """
