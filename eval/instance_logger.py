@@ -7,11 +7,11 @@ from typing import List
 
 
 class WandbInstanceImageLogger:
-    """Log *(image | prediction | ground‑truth)* strips where **every integer id → a
-    maximally‑distinct colour**.
+    """Log *(image | prediction | ground-truth)* strips where **every integer id → a
+    maximally-distinct colour**.
 
-    *   Black (id 0) is reserved for background.
-    *   The colour wheel uses the *golden‑angle hop* so consecutive ids are far
+    *   Black (id 0) is reserved for background.
+    *   The colour wheel uses the *golden-angle hop* so consecutive ids are far
         apart perceptually, avoiding the early "all orange" problem.
     *   The palette expands lazily to fit the highest label value seen.
     """
