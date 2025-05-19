@@ -16,8 +16,8 @@ synthetic_cubes = SyntheticInstanceCubesDataset(
   spatial_transform= True,
   layer_dropout= True,
   layer_shuffle= True,
-  num_layers_range=(6,17),
-  output_volume_size=(96, 96, 96),
+  num_layers_range=(2,6),
+  output_volume_size=(48, 48, 48),
 )
 
 class PapyrusBatch(NamedTuple):
