@@ -18,7 +18,7 @@ general:
   ignore_class_threshold: 100 # seemingly unused
   project_name: mask3d
   workspace: mask3d
-  experiment_name: synthetic-use-lr-finder-starting-rate-3
+  experiment_name: testing-synthetic-small-3
   num_targets: 2
   add_instance: true
   dbscan_eps: 0.95
