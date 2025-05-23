@@ -18,7 +18,7 @@ general:
   ignore_class_threshold: 100 # seemingly unused
   project_name: mask3d
   workspace: mask3d
-  experiment_name: testing-synthetic-small-3
+  experiment_name: test-logging3
   num_targets: 2
   add_instance: true
   dbscan_eps: 0.95

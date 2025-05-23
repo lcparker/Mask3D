@@ -301,25 +301,26 @@ class InstanceSegmentation(pl.LightningModule):
             if self.config.trainer.deterministic:
                 torch.use_deterministic_algorithms(True)
 
-        shape = (96, 96, 96)  # Define the desired shape for the volumes
-
-        features_volume = pointcloud_to_volume(raw_coordinates.cpu(), data.features[..., 0].cpu(), dimensions_HWD=shape)
-        target_volume = pointcloud_to_volume(raw_coordinates.cpu(), target[0]['masks'].cpu().int().argmax(dim=0)+1, dimensions_HWD=shape)
-        output_volume = pointcloud_to_volume(raw_coordinates.cpu(), F.sigmoid(output['pred_masks'][0].cpu()).argmax(dim=-1), dimensions_HWD=shape)
 
         if batch_idx == 0:
+            shape = (48, 48, 48)  # Define the desired shape for the volumes
+
+            features_volume = pointcloud_to_volume(raw_coordinates.cpu(), data.features[..., 0].cpu(), dimensions_HWD=shape)
+            target_volume = pointcloud_to_volume(raw_coordinates.cpu(), target[0]['masks'].cpu().int().argmax(dim=0)+1, dimensions_HWD=shape)
+            output_volume = pointcloud_to_volume(raw_coordinates.cpu(), F.sigmoid(output['pred_masks'][0].cpu()).argmax(dim=-1), dimensions_HWD=shape)
+
             save_dir = Path(self.config.general.save_dir)
             save_dir.mkdir(parents=True, exist_ok=True)
             Nrrd.from_volume(features_volume.numpy()).write( save_dir / f"features_{file_names[0]}_epoch={self.current_epoch}.nrrd")
             Nrrd.from_volume(target_volume.numpy()).write( save_dir / f"target_{file_names[0]}_epoch={self.current_epoch}.nrrd")
             Nrrd.from_volume(output_volume.numpy()).write( save_dir / f"output_mask_logits_{file_names[0]}_epoch={self.current_epoch}.nrrd")
 
-        self.instance_logger.log(
-            features_volume, 
-            output_volume,
-            target_volume,
-            self.global_step, 
-            n_slices=8)
+            self.instance_logger.log(
+                features_volume, 
+                output_volume,
+                target_volume,
+                self.global_step, 
+                n_slices=8)
 
         # matches = self.matches_logger.matched_predictions(output_volume[None, ...], target_volume[None, ...])
         # self.log_dict({"matches": matches})

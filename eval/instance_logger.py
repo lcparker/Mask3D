@@ -1,3 +1,4 @@
+import logging
 import wandb
 import torch
 import numpy as np
@@ -78,7 +79,8 @@ class WandbInstanceImageLogger:
             )
 
         if log_to_wandb:
-            wandb.log({self.prefix: images}, step=step)
+            logging.getLogger(__name__).warn(f"Logging images to wandb")
+            wandb.log({self.prefix: images})
         return images
 
     def _make_distinct_palette(self, n_colors: int) -> List[int]:
