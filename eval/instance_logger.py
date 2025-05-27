@@ -40,12 +40,8 @@ class WandbInstanceImageLogger:
         n_slices: int = 8,
         log_to_wandb: bool = True,
     ) -> List[wandb.Image]:
-        if not (
-            volume.shape == predicted_labels.shape == ground_truth_labels.shape
-        ):
-            raise ValueError(
-                "volume, predicted_labels, and ground_truth_labels must share the same D*H*W geometry."
-            )
+        if not volume.shape == predicted_labels.shape == ground_truth_labels.shape:
+            raise ValueError("volume, predicted_labels, and ground_truth_labels must share the same D*H*W geometry.")
 
         max_id_tensor = torch.stack(
             [predicted_labels.max(), ground_truth_labels.max()]
@@ -64,22 +60,15 @@ class WandbInstanceImageLogger:
             grayscale_rgb = np.stack([slice_uint8] * 3, axis=-1)
 
             # middle / right panels
-            pred_rgb = self._label_to_rgb(
-                predicted_labels[:, z_int].detach().cpu().numpy()
-            )
-            gt_rgb = self._label_to_rgb(
-                ground_truth_labels[:, z_int].detach().cpu().numpy()
-            )
-
-            strip = self.__hstack_with_separator(
-                [grayscale_rgb, pred_rgb, gt_rgb], self.separator_px
-            )
-            images.append(
-                wandb.Image(strip, caption=f"step={step}, slice={z_int}")
-            )
+            pred_rgb = self._label_to_rgb(predicted_labels[:, z_int].detach().cpu().numpy())
+            gt_rgb = self._label_to_rgb(ground_truth_labels[:, z_int].detach().cpu().numpy())
+            
+            strip = self.__hstack_with_separator([grayscale_rgb, pred_rgb, gt_rgb], self.separator_px)
+            image = wandb.Image(strip, caption=f"step={step}, slice={z_int}", mode="RGB")
+            images.append(image)
 
         if log_to_wandb:
-            logging.getLogger(__name__).warn(f"Logging images to wandb")
+            logging.getLogger(__name__).warning(f"Logging images to wandb")
             wandb.log({self.prefix: images})
         return images
 
