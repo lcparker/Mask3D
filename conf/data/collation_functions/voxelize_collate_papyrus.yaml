@@ -8,7 +8,6 @@ train_collation:
   small_crops: false
   very_small_crops: false
   batch_instance: false
-  probing: ${general.linear_probing_backbone}
   task: ${general.task}
   ignore_class_threshold: ${general.ignore_class_threshold}
   filter_out_classes: []
@@ -21,7 +20,6 @@ validation_collation:
   voxel_size: ${data.voxel_size}
   mode: ${data.validation_mode}
   batch_instance: false
-  probing: ${general.linear_probing_backbone}
   task: ${general.task}
   ignore_class_threshold: ${general.ignore_class_threshold}
   filter_out_classes: []
@@ -34,7 +32,6 @@ test_collation:
   voxel_size: ${data.voxel_size}
   mode: ${data.test_mode}
   batch_instance: false
-  probing: ${general.linear_probing_backbone}
   task: ${general.task}
   ignore_class_threshold: ${general.ignore_class_threshold}
   filter_out_classes: []

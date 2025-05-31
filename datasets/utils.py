@@ -13,7 +13,6 @@ class VoxelizeCollate:
         small_crops=False,
         very_small_crops=False,
         batch_instance=False,
-        probing=False,
         task="instance_segmentation",
         ignore_class_threshold=100,
         filter_out_classes=[],
@@ -33,7 +32,6 @@ class VoxelizeCollate:
         self.batch_instance = batch_instance
         self.small_crops = small_crops
         self.very_small_crops = very_small_crops
-        self.probing = probing
         self.ignore_class_threshold = ignore_class_threshold
 
         self.num_queries = num_queries
@@ -49,7 +47,6 @@ class VoxelizeCollate:
             batch,
             self.ignore_label,
             self.voxel_size,
-            self.probing,
             self.mode,
             task=self.task,
             ignore_class_threshold=self.ignore_class_threshold,
@@ -77,7 +74,6 @@ def voxelize(
     batch,
     ignore_label,
     voxel_size,
-    probing,
     mode,
     task,
     ignore_class_threshold,
@@ -145,10 +141,6 @@ def voxelize(
     else:
         coordinates, features = ME.utils.sparse_collate(**input_dict)
         labels = torch.Tensor([])
-
-    if probing:
-        # Probing is False, so this is unused
-        raise NotImplementedError("This should never be called. Add back in the git history if it is.")
 
     if mode == "test":
         for i in range(len(input_dict["labels"])): # batch iteration

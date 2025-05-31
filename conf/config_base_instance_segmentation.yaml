@@ -6,7 +6,6 @@ general:
   checkpoint: null
   backbone_checkpoint: null
   freeze_backbone: false # train only last layer
-  linear_probing_backbone: false
   train_on_segments: false
   eval_on_segments: false
   filter_out_instances: false
