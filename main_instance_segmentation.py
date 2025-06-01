@@ -75,8 +75,11 @@ def train(cfg: DictConfig):
     callbacks.append(RegularCheckpointing())
     callbacks.append(LoadSeedWeights(cfg.general.initial_weights_path))
 
+    # profiler = PyTorchProfiler(filename="profile", export_to_chrome=True)
+
     runner = Trainer(
         logger=loggers,
+        # profiler=profiler,
         gpus=cfg.general.gpus,
         callbacks=callbacks,
         weights_save_path=str(cfg.general.save_dir),
