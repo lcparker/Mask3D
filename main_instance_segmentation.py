@@ -1,3 +1,4 @@
+from pathlib import Path
 import logging
 import os
 from hashlib import md5
@@ -14,6 +15,7 @@ from utils.utils import (
     load_backbone_checkpoint_with_missing_or_exsessive_keys,
 )
 from pytorch_lightning import Trainer, seed_everything
+from pytorch_lightning.profilers import PyTorchProfiler
 
 
 def get_parameters(cfg: DictConfig):
@@ -38,10 +40,9 @@ def get_parameters(cfg: DictConfig):
     if not os.path.exists(cfg.general.save_dir):
         os.makedirs(cfg.general.save_dir)
     else:
-        print("EXPERIMENT ALREADY EXIST")
-        cfg["trainer"][
-            "resume_from_checkpoint"
-        ] = f"{cfg.general.save_dir}/last-epoch.ckpt"
+        checkpoint_path = f"{cfg.general.save_dir}/last-epoch.ckpt"
+        if Path(checkpoint_path).exists():
+            cfg["trainer"][ "resume_from_checkpoint" ] = checkpoint_path
 
     for log in cfg.logging:
         print(log)
@@ -58,7 +59,6 @@ def get_parameters(cfg: DictConfig):
     if cfg.general.checkpoint is not None:
         cfg, model = load_checkpoint_with_missing_or_exsessive_keys(cfg, model)
 
-    logger.info(flatten_dict(OmegaConf.to_container(cfg, resolve=True)))
     return cfg, model, loggers
 
 
