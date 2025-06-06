@@ -6,6 +6,7 @@ train_dataloader:
   pin_memory: ${data.pin_memory}
   num_workers: ${data.num_workers}
   batch_size: ${data.batch_size}
+  persistent_workers: ${data.persistent_workers}
 
 validation_dataloader:
   _target_: torch.utils.data.DataLoader
@@ -13,6 +14,7 @@ validation_dataloader:
   pin_memory: ${data.pin_memory}
   num_workers: ${data.num_workers}
   batch_size: ${data.test_batch_size}
+  persistent_workers: ${data.persistent_workers}
 
 test_dataloader:
   _target_: torch.utils.data.DataLoader
@@ -20,3 +22,4 @@ test_dataloader:
   pin_memory: ${data.pin_memory}
   num_workers: ${data.num_workers}
   batch_size: ${data.test_batch_size}
+  persistent_workers: ${data.persistent_workers}
