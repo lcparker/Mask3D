@@ -17,7 +17,7 @@ add_raw_coordinates: true
 in_channels: 1 # density
 num_labels: 19
 add_instance: false
-num_workers: 13
+num_workers: 17
 batch_size: 4
 test_batch_size: 1
 persistent_workers: false
