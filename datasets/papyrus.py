@@ -16,8 +16,8 @@ synthetic_cubes = SyntheticInstanceCubesDataset(
   spatial_transform= True,
   layer_dropout=True,
   layer_shuffle= True,
-  remove_duplicate_labels=False,
-  num_layers_range=(2,6),
+  remove_empty_labels=False,
+  num_layers_range=(3,16),
   output_volume_size=(48, 48, 48),
 )
 
@@ -38,7 +38,7 @@ class PapyrusDataset(Dataset):
         if not mode in ["train", "validation"]:
             raise ValueError("mode must be either 'train' or 'val'")
 
-        # self.cube_dataset = InstanceCubesDataset(Path("/workspace/code/cubes/") / ("training" if mode == "train" else "validation"))
+        # self.cube_dataset = InstanceCubesDataset( Path("/workspace/code/cubes/") / ("training" if mode == "train" else "validation"), remove_empty_labels=False,  output_volume_size=(48, 48, 48))
         # self.cube_dataset = InstanceCubesDataset(Path("/Users/lachlan/Code/cubes") / ("training" if mode == "train" else "validation"))
         self.cube_dataset = synthetic_cubes
 
