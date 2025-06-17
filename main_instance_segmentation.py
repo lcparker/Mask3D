@@ -19,7 +19,6 @@ from pytorch_lightning.profilers import PyTorchProfiler
 
 
 def get_parameters(cfg: DictConfig):
-    logger = logging.getLogger(__name__)
     load_dotenv(".env")
 
     # parsing input parameters
@@ -53,9 +52,7 @@ def get_parameters(cfg: DictConfig):
 
     model = InstanceSegmentation(cfg)
     if cfg.general.backbone_checkpoint is not None:
-        cfg, model = load_backbone_checkpoint_with_missing_or_exsessive_keys(
-            cfg, model
-        )
+        cfg, model = load_backbone_checkpoint_with_missing_or_exsessive_keys(cfg, model)
     if cfg.general.checkpoint is not None:
         cfg, model = load_checkpoint_with_missing_or_exsessive_keys(cfg, model)
 
