@@ -33,14 +33,13 @@ class PapyrusBatch(NamedTuple):
     volume_batch: dict
 
 class PapyrusDataset(Dataset):
-    def __init__(self, mode="train", label_offset=0):
+    def __init__(self, mode="train", label_offset=0, max_num_volumes: int|None = None):
         super().__init__()
         if not mode in ["train", "validation"]:
             raise ValueError("mode must be either 'train' or 'val'")
 
-        # self.cube_dataset = InstanceCubesDataset( Path("/workspace/code/cubes/") / ("training" if mode == "train" else "validation"), remove_empty_labels=False,  output_volume_size=(48, 48, 48))
-        # self.cube_dataset = InstanceCubesDataset(Path("/Users/lachlan/Code/cubes") / ("training" if mode == "train" else "validation"))
-        self.cube_dataset = synthetic_cubes
+        self.cube_dataset = InstanceCubesDataset( Path("/workspace/code/cubes/") / ("training" if mode == "train" else "validation"), remove_empty_labels=False,  output_volume_size=(48, 48, 48), max_num_volumes=max_num_volumes)
+        # self.cube_dataset = synthetic_cubes
 
         self.label_offset = label_offset
         self.label_info = None
